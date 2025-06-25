@@ -34,8 +34,8 @@ const AuthForm = () => {
       login(token);
 
       // Log values
-      console.log("✅ Token:", token);
-      console.log("✅ User:", user);
+      console.log("Token:", token);
+      console.log("User:", user);
 
       // Success alert
       alert(`${isSignup ? "Signup" : "Login"} successful!`);
@@ -44,7 +44,7 @@ const AuthForm = () => {
       navigate("/dashboard");
     } catch (err) {
       console.error(
-        "❌ Auth error:",
+        "Auth error:",
         err.response?.data?.message || err.message
       );
       alert("Authentication failed. Please check your credentials.");
@@ -77,7 +77,7 @@ const AuthForm = () => {
           value={formData.email}
           onChange={handleChange}
           required
-          autoComplete="username" // ✅ suggested value
+          autoComplete="username" 
         />
 
         <input
@@ -87,7 +87,7 @@ const AuthForm = () => {
           value={formData.password}
           onChange={handleChange}
           required
-          autoComplete={isSignup ? "new-password" : "current-password"} // ✅ dynamic
+          autoComplete={isSignup ? "new-password" : "current-password"} 
         />
 
         <button type="submit" disabled={loading}>
