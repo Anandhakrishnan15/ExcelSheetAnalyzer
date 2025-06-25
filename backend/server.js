@@ -18,7 +18,7 @@ app.use(helmet());
 app.use(express.json());
 
 // Routes
-app.use('/auth', authRoutes);
+app.use('/Auth', authRoutes);
 
 
 // Start the server
