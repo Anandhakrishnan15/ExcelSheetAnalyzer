@@ -14,8 +14,7 @@ const generateToken = (user) => {
 };
 
 exports.registerUser = async (req, res) => {
-    const { name, email, password, role } = req.body; // accept role from request
-
+    const { name, email, password, role } = req.body;
     console.log(`Register attempt - Email: ${email}, Role: ${role}`);
 
     try {
@@ -28,12 +27,13 @@ exports.registerUser = async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            role: role || 'user', // default to 'user' if not provided
+            role: role || 'user',
         });
 
         const token = generateToken(user);
+        const { password: _, ...userData } = user._doc;
 
-        res.status(201).json({ token, user });
+        res.status(201).json({ token, user: userData });
     } catch (error) {
         console.error(`Registration error:`, error.message);
         res.status(500).json({ message: 'Registration error' });
@@ -43,25 +43,23 @@ exports.registerUser = async (req, res) => {
 
 exports.loginUser = async (req, res) => {
     const { email, password } = req.body;
-   
+
     try {
         const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(401).json({ message: 'Invalid email or password' });
-        }
+        if (!user) return res.status(401).json({ message: 'Invalid email or password' });
 
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid email or password' });
-        }
+        if (!isMatch) return res.status(401).json({ message: 'Invalid email or password' });
 
         console.log(`Login successful: ${email}`);
 
         const token = generateToken(user);
+        const { password: _, ...userData } = user._doc;
 
-        res.status(200).json({ token, user });
+        res.status(200).json({ token, user: userData });
     } catch (error) {
-        console.error(` Login error:`, error.message);
+        console.error(`Login error:`, error.message);
         res.status(500).json({ message: 'Login error' });
     }
 };
+
