@@ -27,11 +27,11 @@ function Navbar() {
       <div className="navbar-logo">logo</div>
 
       <div className={`navbar-links ${menuOpen ? "active" : ""}`}>
+        <NavLink to="/" className="nav-link" activeclassname="active">
+          Home
+        </NavLink>
         {token && (
           <>
-            <NavLink to="/" className="nav-link" activeclassname="active">
-              Home
-            </NavLink>
             <NavLink to="/upload" className="nav-link" activeclassname="active">
               Upload
             </NavLink>
