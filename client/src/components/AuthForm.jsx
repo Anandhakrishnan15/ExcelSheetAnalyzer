@@ -8,11 +8,11 @@ const AuthForm = () => {
   const [isSignup, setIsSignup] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
-    email: "",
-    password: "",
+    email: "anandha@example.com",
+    password: "yourpassword123",
   });
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login} = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
