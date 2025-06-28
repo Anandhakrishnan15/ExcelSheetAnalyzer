@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const authRoutes = require('./routers/authRoutes');
 const getuserRouter = require ("./routers/getUserInfo")
+const upload = require('./routers/upload')
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.use(express.json());
 // Routes
 app.use('/Auth', authRoutes);
 app.use("/api/users", getuserRouter )
+app.use('/api/uploads', upload )
 
 
 // Start the server
