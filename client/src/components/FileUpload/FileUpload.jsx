@@ -134,7 +134,7 @@ export default function FileUpload() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col md:flex-row bg-[var(--bg)] text-[var(--text)]">
+    <div className=" w-full flex flex-col md:flex-row bg-[var(--bg)] text-[var(--text)]">
       {/* Global Drag Overlay */}
       {!file && isDraggingOver && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 pointer-events-none">
