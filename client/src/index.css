@@ -50,6 +50,25 @@ body.light {
   transition: background 0.3s, color 0.3s;
 }
 
+/* Black scrollbar */
+.scrollbar-black::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-black::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-black::-webkit-scrollbar-thumb {
+  background-color: #000;  /* Black */
+  border-radius: 4px;
+}
+
+.scrollbar-black {
+  scrollbar-color: #000 transparent; /* For Firefox */
+  scrollbar-width: thin;             /* For Firefox */
+}
 
 
 
