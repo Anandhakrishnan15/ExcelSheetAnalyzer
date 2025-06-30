@@ -28,4 +28,4 @@ export const getMe = () => API.get("/api/users/me");
 export const uploadExcel = (data) => API.post("/api/uploads",data)
 
 //API get the file data
-export const getExceldata = () => API.get("/api/uploads")
+export const getExceldata = () => API.get("/api/uploads/get")
