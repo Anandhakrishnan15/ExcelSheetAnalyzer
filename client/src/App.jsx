@@ -7,6 +7,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import { Profile } from "./pages/Profile";
 import PrivateRoute from "./components/PrivateRoute";
+import ChartComponent from "./components/ChartComponent"
 
 function App() {
   return (
@@ -20,10 +21,11 @@ function App() {
           path="/"
           element={
             // <PrivateRoute>
-              <Home />
+            <Home />
             // </PrivateRoute>
           }
         />
+
         <Route
           path="/upload"
           element={
@@ -33,13 +35,14 @@ function App() {
           }
         />
         <Route
-          path="/dashboard"
+          path="/upload/chart/:filename"
           element={
             <PrivateRoute>
-              <Dashboard />
+              <ChartComponent />
             </PrivateRoute>
           }
         />
+
         <Route
           path="/profile"
           element={
