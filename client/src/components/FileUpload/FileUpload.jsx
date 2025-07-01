@@ -7,6 +7,7 @@ import DropzoneArea from "./DropzoneArea";
 import FileInfo from "./FileInfo";
 import DataPreview from "./DataPreview";
 import * as XLSX from "xlsx";
+import AllUploedExels from "../AllUploedExels";
 
 export default function FileUpload() {
   const [file, setFile] = useState(null);
@@ -137,11 +138,13 @@ export default function FileUpload() {
     <div className=" w-full flex flex-col md:flex-row bg-[var(--bg)] text-[var(--text)]">
       {/* Global Drag Overlay */}
       {!file && isDraggingOver && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 pointer-events-none">
-          <p className="text-white text-lg font-semibold">
-            Drop your file to upload
-          </p>
-        </div>
+        <div
+         className="fixed inset-0 w-screen h-screen z-50 flex items-center justify-center bg-black/50 pointer-events-none p-5 border-4 border-dotted border-gray-700 box-border">
+  <p className="text-white text-lg font-semibold">
+    Drop your file to upload
+  </p>
+</div>
+
       )}
 
       {/* Sidebar */}
@@ -171,10 +174,17 @@ export default function FileUpload() {
         </button>
         <button
           onClick={handleUploadClick}
-          className="bg-green-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 hover:bg-green-700 hover:shadow-lg active:scale-95"
+          className={`bg-green-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md transition duration-300 ease-in-out transform 
+    hover:scale-105 hover:bg-green-700 hover:shadow-lg active:scale-95
+    disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none`}
+          disabled={!file}
         >
           Upload
         </button>
+
+        <div className="border-t w-full p-2.5">
+          <AllUploedExels />
+        </div>
       </div>
 
       {/* Main Content */}
