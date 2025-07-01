@@ -1,5 +1,5 @@
 import { useParams, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import ChartCard from "./ChartCard";
 
@@ -9,17 +9,28 @@ const ChartComponent = () => {
   const [charts, setCharts] = useState([
     { id: 1, title: "Chart 1", xAxis: "", yAxis: "", graphType: "bar" },
   ]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const fileData = location.state?.fileData;
   const columns = fileData?.rows?.length ? Object.keys(fileData.rows[0]) : [];
-  console.log(columns);
-  
 
   const updateChart = (index, key, value) => {
     const updated = [...charts];
     updated[index][key] = value;
     setCharts(updated);
   };
+
+useEffect(()=>{
+  function screenResize(){
+    if(window.innerWidth <= 1024){
+      setIsSidebarOpen(false)
+    }else{
+      setIsSidebarOpen(true)
+    }
+  }
+  window.addEventListener('resize',screenResize)
+  screenResize()
+  return () => window.removeEventListener("resize", screenResize);
+},[])
 
   return (
     <div className="flex min-h-[90vh] bg-[var(--body)]">
@@ -53,16 +64,17 @@ const ChartComponent = () => {
           Add Chart
         </button>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="flex flex-wrap justify-center gap-6">
           {charts.map((chart, index) => (
-            <ChartCard
-              key={chart.id}
-              chart={chart}
-              index={index}
-              columns={columns}
-              updateChart={updateChart}
-              rows={fileData?.rows || []}
-            />
+            <div key={chart.id} className="flex-1 min-w-[400px] max-w-[600px]">
+              <ChartCard
+                chart={chart}
+                index={index}
+                columns={columns}
+                updateChart={updateChart}
+                rows={fileData?.rows || []}
+              />
+            </div>
           ))}
         </div>
       </main>

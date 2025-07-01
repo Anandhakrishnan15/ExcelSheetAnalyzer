@@ -1,8 +1,9 @@
 import ChartControls from "./ChartControls";
 import ChartRenderer from "./ChartRenderer";
 
+
 const ChartCard = ({ chart, index, columns, updateChart, rows }) => (
-  <div className="flex flex-col bg-[var(--card)] p-4 rounded-lg shadow hover:shadow-lg transition h-fit">
+  <div className="flex flex-col bg-[var(--card)] p-4 w- rounded-lg shadow hover:shadow-lg transition h-fit">
     <input
       type="text"
       className="text-lg font-semibold mb-3 w-full text-center bg-transparent border-b border-[var(--border)] focus:outline-none focus:border-blue-500"

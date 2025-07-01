@@ -7,7 +7,7 @@ import DropzoneArea from "./DropzoneArea";
 import FileInfo from "./FileInfo";
 import DataPreview from "./DataPreview";
 import * as XLSX from "xlsx";
-import AllUploedExels from "../AllUploedExels";
+import AllUploedExels from "../ChartUploads/AllUploedExels";
 
 export default function FileUpload() {
   const [file, setFile] = useState(null);
@@ -138,13 +138,11 @@ export default function FileUpload() {
     <div className=" w-full flex flex-col md:flex-row bg-[var(--bg)] text-[var(--text)]">
       {/* Global Drag Overlay */}
       {!file && isDraggingOver && (
-        <div
-         className="fixed inset-0 w-screen h-screen z-50 flex items-center justify-center bg-black/50 pointer-events-none p-5 border-4 border-dotted border-gray-700 box-border">
-  <p className="text-white text-lg font-semibold">
-    Drop your file to upload
-  </p>
-</div>
-
+        <div className="fixed inset-0 w-screen h-screen z-50 flex items-center justify-center bg-black/50 pointer-events-none p-5 border-4 border-dotted border-gray-700 box-border">
+          <p className="text-white text-lg font-semibold">
+            Drop your file to upload
+          </p>
+        </div>
       )}
 
       {/* Sidebar */}

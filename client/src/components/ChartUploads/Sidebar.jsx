@@ -1,5 +1,5 @@
 import SidebarToggleButton from "./SidebarToggleButton";
-import DataTable from "./DataTable";
+import DataTable from "../DataTable";
 import AllUploedExels from "./AllUploedExels";
 
 const Sidebar = ({ isOpen, toggle, filename, fileData }) => (

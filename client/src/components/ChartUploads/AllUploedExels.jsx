@@ -1,5 +1,5 @@
 import React from "react";
-import { useExcelUpload } from "../context/excelUploadcontext";
+import { useExcelUpload } from "../../context/excelUploadcontext";
 import { useNavigate } from "react-router-dom";
 import { SquareArrowOutUpRight } from "lucide-react";
 
@@ -26,7 +26,7 @@ const AllUploedExels = () => {
               onClick={() =>
                 navigate(`/upload/chart/${encodeURIComponent(file.fileName)}`, {
                   state: {
-                    fileData:file,
+                    fileData: file,
                   },
                 })
               }
