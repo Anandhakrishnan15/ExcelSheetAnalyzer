@@ -7,7 +7,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import { Profile } from "./pages/Profile";
 import PrivateRoute from "./components/PrivateRoute";
-import ChartComponent from "./components/ChartComponent"
+import ChartComponent from "./components/ChartUploads/ChartComponent"
 
 function App() {
   return (
@@ -39,6 +39,14 @@ function App() {
           element={
             <PrivateRoute>
               <ChartComponent />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Dashboard />
             </PrivateRoute>
           }
         />
