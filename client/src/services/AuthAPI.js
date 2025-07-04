@@ -29,3 +29,20 @@ export const uploadExcel = (data) => API.post("/api/uploads",data)
 
 //API get the file data
 export const getExceldata = () => API.get("/api/uploads/get")
+
+
+//  Upload Chart Snapshot
+export const uploadChart = (uploadedFile, formData) =>
+    API.post(`/api/charts/upload-chart/${encodeURIComponent(uploadedFile)}`, formData);
+
+// Get All Charts for the Logged-In User
+export const getMyCharts = () =>
+    API.get("/api/charts/my-charts");
+
+// Get Charts for a Specific Uploaded File
+export const getChartsByFile = (uploadedFile) =>
+    API.get(`/api/charts/by-file/${encodeURIComponent(uploadedFile)}`);
+
+// Delete a Chart
+export const deleteChart = (chartId) =>
+    API.delete(`/api/charts/delete/${chartId}`);
