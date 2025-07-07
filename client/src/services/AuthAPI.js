@@ -25,24 +25,16 @@ export const loginUser = (data) => API.post("/Auth/login", data);
 export const getMe = () => API.get("/api/users/me");
 
 //API upload FileData
-export const uploadExcel = (data) => API.post("/api/uploads",data)
+// export const uploadExcel = (data) => API.post("/api/uploads",data)
+export const uploadExcel = (formData) =>
+    API.post("/api/uploads", formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    });
 
 //API get the file data
 export const getExceldata = () => API.get("/api/uploads/get")
 
-
-//  Upload Chart Snapshot
-export const uploadChart = (uploadedFile, formData) =>
-    API.post(`/api/charts/upload-chart/${encodeURIComponent(uploadedFile)}`, formData);
-
-// Get All Charts for the Logged-In User
-export const getMyCharts = () =>
-    API.get("/api/charts/my-charts");
-
-// Get Charts for a Specific Uploaded File
-export const getChartsByFile = (uploadedFile) =>
-    API.get(`/api/charts/by-file/${encodeURIComponent(uploadedFile)}`);
-
-// Delete a Chart
-export const deleteChart = (chartId) =>
-    API.delete(`/api/charts/delete/${chartId}`);
+export const saveCharts = (payload) => API.post("/api/saved-graphs/save",payload)
+export const getSavedChart = () => API.get("api/saved-graphs/my")
