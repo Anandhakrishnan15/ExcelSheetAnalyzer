@@ -4,27 +4,36 @@ import React, { createContext, useState, useEffect, useContext } from "react";
 import { getExceldata } from "../services/AuthAPI";
 import { useAuth } from "./AuthContext";
 
-// 1️⃣ Create the Context
+//  Create the Context
 const ExcelUploadContext = createContext();
 
-// 2️⃣ Create a Provider Component
+// Create a Provider Component
 export const ExcelUploadProvider = ({ children }) => {
   const [excelData, setExcelData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { token } = useAuth();
 
-  // 3️⃣ Fetch function to get all uploaded Excel data
+  // Fetch function to get all uploaded Excel data
   const getExcelData = async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await getExceldata();
-      setExcelData(response.data); 
-      console.log(response.data);
-      
+      const data = response?.data?.uploadedFiles || response?.data;
+
+      setExcelData(data);
+
+      data.forEach((file) => {
+        if (file.source === "multer" && file.fileExists) {
+          console.log(`File "${file.fileName}" available on disk.`);
+        } else {
+          console.log(`File "${file.fileName}" only available in database.`);
+        }
+      });
+    
     } catch (err) {
-      console.error("Error fetching Excel data:", err);
+      console.error("❌ Error fetching Excel data:", err);
       setError(err);
     } finally {
       setLoading(false);
@@ -42,7 +51,7 @@ export const ExcelUploadProvider = ({ children }) => {
         excelData,
         loading,
         error,
-        getExcelData, // expose refetch
+        getExcelData, 
       }}
     >
       {children}
@@ -50,7 +59,6 @@ export const ExcelUploadProvider = ({ children }) => {
   );
 };
 
-// 5️⃣ Custom hook for easier consumption
 export const useExcelUpload = () => {
   return useContext(ExcelUploadContext);
 };
