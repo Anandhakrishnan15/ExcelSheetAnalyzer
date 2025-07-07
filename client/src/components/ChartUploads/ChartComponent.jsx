@@ -3,6 +3,7 @@ import { useState } from "react";
 import ChartCard from "./ChartCard";
 import { saveCharts } from "../../services/AuthAPI";
 import ChartPreview from "./ChartPreview";
+import { useChartRefresh } from "../../context/ChartRefreshContext";
 
 const ChartComponent = () => {
   // Make sure param name matches your Route
@@ -36,7 +37,7 @@ const ChartComponent = () => {
       now.getDate()
     )}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
   }
-
+  const savedChartsRef = useChartRefresh();
   const handleSave = async (chart, index) => {
     try {
       const payload = {
@@ -59,6 +60,7 @@ const ChartComponent = () => {
       console.log("Chart saved:", res.data);
       setSavedIndexes((prev) => [chart.id, ...prev]);
       alert("Chart saved successfully!");
+      savedChartsRef.current?.refreshCharts();
     } catch (error) {
       console.error("Save failed:", error.response?.data || error.message);
       alert("Failed to save chart.");
