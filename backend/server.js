@@ -6,6 +6,7 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routers/authRoutes');
 const getuserRouter = require ("./routers/getUserInfo")
 const upload = require('./routers/upload')
+const savedGraphRoutes = require('./routers/savedGraphRoutes')
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use('/Auth', authRoutes);
 app.use("/api/users", getuserRouter )
 app.use('/api/uploads', upload )
+app.use("/api/saved-graphs", savedGraphRoutes);
 
 
 // Start the server
