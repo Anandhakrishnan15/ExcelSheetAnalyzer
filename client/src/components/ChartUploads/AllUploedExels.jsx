@@ -6,7 +6,7 @@ import { SquareArrowOutUpRight } from "lucide-react";
 const AllUploedExels = () => {
   const { excelData, loading, error } = useExcelUpload();
   const navigate = useNavigate();
-
+  
   if (loading) return <div>Loading Excel Data...</div>;
   if (error) return <div>Error: {error.message}</div>;
 
@@ -25,15 +25,21 @@ const AllUploedExels = () => {
               key={file._id}
               onClick={() =>
                 navigate(`/upload/chart/${encodeURIComponent(file.fileName)}`, {
-                  state: {
-                    fileData: file,
-                  },
+                  state: { fileData: file },
                 })
               }
               className="flex items-center justify-between border border-gray-200 rounded-md p-3 hover:bg-[var(--border)] text-black transition cursor-pointer"
             >
-              <span className="text-[var(--text)]">{file.fileName}</span>
-              <SquareArrowOutUpRight size={16} className="text-blue-600" />
+              <span
+                className="text-[var(--text)] truncate max-w-[80%]"
+                title={file.fileName}
+              >
+                {file.fileName}
+              </span>
+              <SquareArrowOutUpRight
+                size={16}
+                className="text-blue-600 shrink-0"
+              />
             </li>
           ))}
         </ul>
