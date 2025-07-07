@@ -1,22 +1,26 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const UploadedFileSchema = new mongoose.Schema(
     {
         user: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
-            required: true
+            unique: true, // one document per user
+            required: true,
         },
-        fileName: {
-            type: String,
-            required: true
-        },
-        rows: {
-            type: [Object],
-            default: []
-        }
+        uploadedFiles: [
+            {
+                fileName: { type: String, required: true },
+                rows: { type: [Object], default: [] },
+                filePath: { type: String, default: null },
+                originalName: { type: String, default: null },
+                mimeType: { type: String, default: null },
+                size: { type: Number, default: null },
+                createdAt: { type: Date, default: Date.now },
+            },
+        ],
     },
     { timestamps: true }
 );
 
-module.exports = mongoose.model("UserUploadedFile", UploadedFileSchema);
+module.exports = mongoose.model("UserUploadedFiles", UploadedFileSchema);
