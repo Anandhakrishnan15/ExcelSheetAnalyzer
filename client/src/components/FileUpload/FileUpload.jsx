@@ -1,19 +1,23 @@
 "use client";
 import React, { useCallback, useState, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
-import { Code, Table, Download } from "lucide-react";
+import { Code, Table, Download, Factory } from "lucide-react";
 import { uploadExcel } from "../../services/AuthAPI";
 import DropzoneArea from "./DropzoneArea";
 import FileInfo from "./FileInfo";
 import DataPreview from "./DataPreview";
 import * as XLSX from "xlsx";
 import AllUploedExels from "../ChartUploads/AllUploedExels";
+import { useExcelUpload } from "../../context/excelUploadcontext";
+
 
 export default function FileUpload() {
   const [file, setFile] = useState(null);
   const [jsonData, setJsonData] = useState(null);
   const [showTable, setShowTable] = useState(true);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [isloading,setIsloading ]= useState(false)
+  const { getExcelData } = useExcelUpload();
 
   const onDrop = useCallback((acceptedFiles) => {
     if (acceptedFiles.length > 0) {
@@ -94,14 +98,14 @@ export default function FileUpload() {
     window.addEventListener("dragover", handleDragOver);
     window.addEventListener("drop", handleDrop);
 
-    return () => {
+    return () => { //cleanup all the eventlisteners
       window.removeEventListener("dragenter", handleDragEnter);
       window.removeEventListener("dragleave", handleDragLeave);
       window.removeEventListener("dragover", handleDragOver);
       window.removeEventListener("drop", handleDrop);
     };
   }, [onDrop]);
-
+  //downLoad the JSon button
   const handleDownloadJSON = () => {
     if (!jsonData) return;
     const blob = new Blob([JSON.stringify(jsonData.rows, null, 2)], {
@@ -114,25 +118,36 @@ export default function FileUpload() {
     a.click();
     URL.revokeObjectURL(url);
   };
-
+//the upload button
   const handleUploadClick = async () => {
     try {
+      setIsloading(true)
       if (!file) {
         alert("Please select a file before uploading.");
         return;
       }
-      const payload = {
-        fileName: file.name,
-        rows: jsonData.rows,
-      };
-      const res = await uploadExcel(payload);
-      alert(`${file.name} has been uploaded to the database.`);
-      console.log("Upload successful:", res);
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("fileName", file.name);
+      formData.append("rows", JSON.stringify(jsonData.rows));
+
+      const res = await uploadExcel(formData);
+
+      alert(`${file.name} has been uploaded to the server and database.`);
+      console.log("✅ Upload successful:", res);
+      await getExcelData();
     } catch (error) {
-      console.error("Upload failed:", error);
+      console.error("❌ Upload failed:", error);
       alert("Upload failed. Check the console for details.");
     }
+    finally{
+      setIsloading(false)
+      setFile(null)
+      setJsonData(null)
+    }
   };
+  
 
   return (
     <div className=" w-full flex flex-col md:flex-row bg-[var(--bg)] text-[var(--text)]">
@@ -177,7 +192,7 @@ export default function FileUpload() {
     disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none`}
           disabled={!file}
         >
-          Upload
+         {!isloading ? "Upload":"uploading"} 
         </button>
 
         <div className="border-t w-full p-2.5">
@@ -203,7 +218,7 @@ export default function FileUpload() {
             }}
           />
         )}
-        {jsonData && <DataPreview jsonData={jsonData} showTable={showTable} />}
+        { jsonData && <DataPreview jsonData={jsonData} showTable={showTable} />}
       </div>
     </div>
   );
