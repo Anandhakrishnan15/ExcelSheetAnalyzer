@@ -8,6 +8,9 @@ import Dashboard from "./pages/Dashboard";
 import { Profile } from "./pages/Profile";
 import PrivateRoute from "./components/PrivateRoute";
 import ChartComponent from "./components/ChartUploads/ChartComponent"
+import ChartLayout from "./components/ChartUploads/ChartLayout";
+import ReportComponent from "./components/ReportComponent";
+import { ChartRefreshProvider } from "./context/ChartRefreshContext";
 
 function App() {
   return (
@@ -34,14 +37,27 @@ function App() {
             </PrivateRoute>
           }
         />
-        <Route
+        {/* <Route
           path="/upload/chart/:filename"
           element={
             <PrivateRoute>
               <ChartComponent />
             </PrivateRoute>
           }
-        />
+        /> */}
+        <Route
+          path="/upload/chart/:filename"
+          element={
+            <ChartRefreshProvider>
+              <ChartLayout />
+            </ChartRefreshProvider>
+          }
+        >
+          {/* This is the default nested route */}
+          <Route index element={<ChartComponent />} />
+          {/* This is the /report nested route */}
+          <Route path="report" element={<ReportComponent />} />
+        </Route>
         <Route
           path="/dashboard"
           element={
