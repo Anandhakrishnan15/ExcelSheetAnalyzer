@@ -13,6 +13,7 @@ const ChartCard = ({
   isMobile,
   disabled,
   readOnly = false,
+  canvasRef,
 }) => {
   return (
     <div className="flex flex-col bg-[var(--card)] p-4 w-full rounded-lg shadow hover:shadow-lg transition h-fit relative">
@@ -20,6 +21,7 @@ const ChartCard = ({
         <button
           onClick={() => handleRemove(index)}
           className="absolute top-2 right-2 text-gray-500 hover:text-red-500 focus:outline-none border-none"
+          aria-label="Remove chart"
         >
           <X className="w-5 h-5" />
         </button>
@@ -49,7 +51,8 @@ const ChartCard = ({
       )}
 
       <ChartRenderer
-        type={chart.graphType || chart.type}
+        ref={canvasRef}
+        type={chart.type || 'bar'}
         xAxis={chart.xAxis || chart.config?.xAxis}
         yAxis={chart.yAxis || chart.config?.yAxis}
         data={rows}
@@ -64,7 +67,7 @@ const ChartCard = ({
                 ? "bg-gray-400 text-white cursor-not-allowed"
                 : "bg-blue-600 text-white hover:bg-blue-700"
             }`}
-          disabled={disabled}
+          disabled={readOnly}
         >
           {disabled ? "Saved" : "Save Chart"}
         </button>
