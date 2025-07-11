@@ -9,7 +9,7 @@ function Navbar() {
     localStorage.getItem("theme") === "dark"
   );
 
-  const { token, logout } = useAuth();
+  const { token, logout,isAdmin } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,13 +35,17 @@ function Navbar() {
             <NavLink to="/upload" className="nav-link" activeclassname="active">
               Upload
             </NavLink>
-            <NavLink
-              to="/dashboard"
-              className="nav-link"
-              activeclassname="active"
-            >
-              Dashboard
-            </NavLink>
+            {isAdmin && (
+              <>
+                <NavLink
+                  to="/dashboard"
+                  className="nav-link"
+                  activeclassname="active"
+                >
+                  Dashboard
+                </NavLink>
+              </>
+            )}
             <NavLink
               to="/profile"
               className="nav-link"
