@@ -1,14 +1,17 @@
 const mongoose = require("mongoose");
+const AIReport = require("./AIReport");
 
 const ChartSchema = new mongoose.Schema(
     {
         chartId: { type: String, required: true },
         title: { type: String, default: "Untitled Chart" },
-        type: { type: String, enum: ["bar", "line", "pie", "area", "scatter"], default: "bar" },
+        type: { type: String, enum: ["bar", "line", "pie","doughnut","area", "scatter"], default: "bar" },
+        data: { type: Object, default: {} },
         uploadedFile: { type: String, required: true },
         config: { type: Object, default: {} },
         createdAt: { type: Date, default: Date.now },
-        saved:{type:Boolean, require:true}
+        AIReport: { type: String, default: "" },
+        saved: { type: Boolean, required: true }
     },
     { _id: false }
 );
@@ -19,7 +22,7 @@ const SavedGraphSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: true,
-            unique: true   // One per user
+            unique: true
         },
         charts: [ChartSchema]
     },
@@ -27,4 +30,3 @@ const SavedGraphSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model("SavedGraph", SavedGraphSchema);
-
