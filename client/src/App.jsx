@@ -11,8 +11,11 @@ import ChartComponent from "./components/ChartUploads/ChartComponent"
 import ChartLayout from "./components/ChartUploads/ChartLayout";
 import ReportComponent from "./components/ReportComponent";
 import { ChartRefreshProvider } from "./context/ChartRefreshContext";
+import { useAuth } from "./context/AuthContext";
+import ChartDetail from "./components/ChartDetail";
 
 function App() {
+  const { isAdmin } = useAuth();
   return (
     <>
       {/* <h1>hello team</h1> */}
@@ -61,11 +64,12 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <PrivateRoute>
+            <PrivateRoute adminOnly={true}>
               <Dashboard />
             </PrivateRoute>
           }
         />
+        <Route path="/chart/:chartId" element={<ChartDetail />} />
 
         <Route
           path="/profile"
