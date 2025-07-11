@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -7,8 +8,8 @@ const authRoutes = require('./routers/authRoutes');
 const getuserRouter = require ("./routers/getUserInfo")
 const upload = require('./routers/upload')
 const savedGraphRoutes = require('./routers/savedGraphRoutes')
+const aiReportRoutes = require("./routers/aiReportRoutes");
 
-dotenv.config();
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use('/Auth', authRoutes);
 app.use("/api/users", getuserRouter )
 app.use('/api/uploads', upload )
 app.use("/api/saved-graphs", savedGraphRoutes);
+app.use("/api/ai-summary", aiReportRoutes);
 
 
 // Start the server

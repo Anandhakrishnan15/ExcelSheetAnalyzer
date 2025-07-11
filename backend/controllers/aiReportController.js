@@ -3,8 +3,6 @@ const User = require("../models/User");
 const openai = require("../config/openai");
 const SavedGraph = require("../models/SavedGraph");
 
-
-
 exports.generateAIReport = async (req, res) => {
     try {
         const userId = req.user._id;
