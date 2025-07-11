@@ -1,9 +1,10 @@
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useOutletContext, useNavigate } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
 import { getSavedChart } from "../services/AuthAPI";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import Chart from "chart.js/auto";
+import ChartCard from "./ChartUploads/ChartCard";
+import JSZip from "jszip";
 
 const ReportComponent = () => {
   const { filename } = useParams();
@@ -14,11 +15,13 @@ const ReportComponent = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedCharts, setSelectedCharts] = useState([]);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [generatingImg, setGeneratingImg] = useState(false);
+  const [preparationError, setPreparationError] = useState("");
 
   const chartRefs = useRef({});
-  const chartInstances = useRef({});
+console.log('this is reposcompinet pafe ', charts);
 
-  // Fetch saved charts
   useEffect(() => {
     const fetchCharts = async () => {
       try {
@@ -31,7 +34,6 @@ const ReportComponent = () => {
         setLoading(false);
       }
     };
-
     fetchCharts();
   }, []);
 
@@ -39,111 +41,186 @@ const ReportComponent = () => {
     (chart) => chart.uploadedFile === fileData?._id
   );
 
-  // Generate all charts when selection changes
-  useEffect(() => {
-    if (!fileData || !fileData.rows) return;
-
-    // Destroy previous chart instances
-    Object.values(chartInstances.current).forEach((instance) =>
-      instance.destroy()
-    );
-    chartInstances.current = {};
-
-    // For each selected chart, create chart
-    selectedCharts.forEach((chartId) => {
-      const canvas = chartRefs.current[chartId];
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-
-      const selectedChart = filteredCharts.find((c) => c.chartId === chartId);
-      if (!selectedChart) return;
-
-      const { xAxis, yAxis, type } = selectedChart.config || {};
-      if (!xAxis || !yAxis) return;
-
-      const labels = [];
-      const data = [];
-      fileData.rows.forEach((row) => {
-        const xVal = row[xAxis];
-        const yVal = parseFloat(row[yAxis]);
-        if (xVal != null && !isNaN(yVal)) {
-          labels.push(xVal);
-          data.push(yVal);
-        }
-      });
-
-      chartInstances.current[chartId] = new Chart(ctx, {
-        type: type || "bar",
-        data: {
-          labels,
-          datasets: [
-            {
-              label: `${yAxis} vs ${xAxis}`,
-              data,
-              backgroundColor: "rgba(54, 162, 235, 0.5)",
-              borderColor: "rgba(54, 162, 235, 1)",
-              borderWidth: 1,
-            },
-          ],
-        },
-        options: {
-          responsive: false,
-          plugins: {
-            legend: { display: true },
-          },
-          scales: {
-            y: { beginAtZero: true },
-          },
-        },
-      });
-    });
-  }, [fileData, selectedCharts]);
+  // Reusable canvas wait logic
+  const waitForCanvases = async (
+    selectedIds,
+    timeout = 5000,
+    interval = 200
+  ) => {
+    let waited = 0;
+    while (true) {
+      const allReady = selectedIds.every(
+        (id) => chartRefs.current[id]?.current
+      );
+      if (allReady) return true;
+      if (waited >= timeout) return false;
+      await new Promise((r) => setTimeout(r, interval));
+      waited += interval;
+    }
+  };
 
   const handleDownloadPDF = async () => {
-    const doc = new jsPDF();
+    setPreparationError("");
+    setGeneratingPDF(true);
 
+    const ready = await waitForCanvases(selectedCharts);
+    if (!ready) {
+      setGeneratingPDF(false);
+      setPreparationError(
+        "Some charts could not be prepared. Please wait a moment after selecting before downloading."
+      );
+      return;
+    }
+
+    const doc = new jsPDF();
     doc.setFontSize(18);
     doc.text(`Report: ${fileData.fileName}`, 14, 20);
 
     let yOffset = 30;
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Loop over each selected chart to add images
     for (const chartId of selectedCharts) {
-      const canvas = chartRefs.current[chartId];
-      if (!canvas) continue;
-      const dataUrl = canvas.toDataURL("image/png");
-      if (dataUrl) {
-        doc.addImage(dataUrl, "PNG", 15, yOffset, 180, 80);
-        yOffset += 90;
+      const chart = filteredCharts.find((c) => c.chartId === chartId);
+      const canvas = chartRefs.current[chartId]?.current;
+      const dataUrl = canvas?.toDataURL("image/png");
+
+      if (!chart || !dataUrl) continue;
+
+      const estimatedHeight = 90 + (chart.AIReport ? 50 : 0); // basic estimate
+
+      if (yOffset + estimatedHeight > pageHeight - 20) {
+        doc.addPage();
+        yOffset = 20;
       }
+
+      doc.setFontSize(14);
+      doc.text(chart.title || `Chart - ${chartId}`, 15, yOffset);
+      yOffset += 8;
+
+      doc.addImage(dataUrl, "PNG", 15, yOffset, 180, 80);
+      yOffset += 90;
+
+      if (chart.AIReport) {
+        doc.setFontSize(12);
+        doc.text("AI Generated Summary:", 15, yOffset + 6);
+        const summaryLines = doc.splitTextToSize(chart.AIReport, 180);
+        doc.setFontSize(10);
+
+        if (yOffset + 14 + summaryLines.length * 5 > pageHeight - 20) {
+          doc.addPage();
+          yOffset = 20;
+          doc.setFontSize(12);
+          doc.text("AI Generated Summary:", 15, yOffset);
+          yOffset += 6;
+        } else {
+          yOffset += 14;
+        }
+
+        doc.text(summaryLines, 15, yOffset);
+        yOffset += summaryLines.length * 5;
+      }
+
+      yOffset += 10; // spacing before next chart
     }
 
-    // Get selected chart configs
-    const selected = filteredCharts.filter((c) =>
-      selectedCharts.includes(c.chartId)
-    );
+    // Add Data Table
+    if (yOffset + 30 > pageHeight - 20) {
+      doc.addPage();
+      yOffset = 20;
+    }
 
-    // Gather unique fields
     const fieldsSet = new Set();
-    selected.forEach((c) => {
-      if (c.config?.xAxis) fieldsSet.add(c.config.xAxis);
-      if (c.config?.yAxis) fieldsSet.add(c.config.yAxis);
+    selectedCharts.forEach((chartId) => {
+      const chart = filteredCharts.find((c) => c.chartId === chartId);
+      if (chart?.config?.xAxis) fieldsSet.add(chart.config.xAxis);
+      if (chart?.config?.yAxis) fieldsSet.add(chart.config.yAxis);
     });
-    const fields = Array.from(fieldsSet);
 
-    // Build table body data
-    const body = fileData.rows.map((row) =>
-      fields.map((field) => row[field] ?? "—")
-    );
+    const fields =
+      Array.from(fieldsSet).length > 0
+        ? Array.from(fieldsSet)
+        : Object.keys(fileData.rows[0] || {});
 
-    // Add dynamic data table
+    const body = fileData.rows.map((row) => fields.map((f) => row[f] ?? "—"));
+
     autoTable(doc, {
       startY: yOffset + 10,
       head: [fields],
       body,
+      styles: { fontSize: 8 },
     });
 
     doc.save(`${fileData.fileName}-report.pdf`);
+    setGeneratingPDF(false);
+  };
+  
+  
+
+  const handleDownloadImagesZip = async () => {
+    setPreparationError("");
+    setGeneratingImg(true);
+
+    const ready = await waitForCanvases(selectedCharts);
+    if (!ready) {
+      setGeneratingImg(false);
+      setPreparationError(
+        "Some charts could not be prepared. Please wait a moment after selecting before downloading."
+      );
+      return;
+    }
+
+    // If only one chart is selected, download directly as .png
+    if (selectedCharts.length === 1) {
+      const chartId = selectedCharts[0];
+      const chart = filteredCharts.find((c) => c.chartId === chartId);
+      const canvas = chartRefs.current[chartId]?.current;
+      const dataUrl = canvas?.toDataURL("image/png");
+      if (!dataUrl) {
+        setGeneratingImg(false);
+        return;
+      }
+
+      const fileName = `${(chart.title || "chart")
+        .replace(/\s+/g, "_")
+        .toLowerCase()}.png`;
+
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = fileName;
+      link.click();
+
+      setGeneratingImg(false);
+      return;
+    }
+
+    // If multiple charts selected, prepare ZIP
+    const zip = new JSZip();
+    const folder = zip.folder("charts");
+
+    for (const [index, chartId] of selectedCharts.entries()) {
+      const chart = filteredCharts.find((c) => c.chartId === chartId);
+      const canvas = chartRefs.current[chartId]?.current;
+      const dataUrl = canvas?.toDataURL("image/png");
+      if (!dataUrl) continue;
+
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+
+      const fileName = `${index + 1}_${(chart.title || "chart")
+        .replace(/\s+/g, "_")
+        .toLowerCase()}.png`;
+
+      folder.file(fileName, blob);
+    }
+
+    const content = await zip.generateAsync({ type: "blob" });
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(content);
+    link.download = `${fileData.fileName}-charts.zip`;
+    link.click();
+
+    setGeneratingImg(false);
   };
   
 
@@ -176,27 +253,53 @@ const ReportComponent = () => {
         Back to Charts
       </button>
 
-      {/* Chart Preview */}
+      {preparationError && (
+        <div className="text-red-600 font-semibold">{preparationError}</div>
+      )}
+
       <div className="mb-4">
         <h3 className="text-xl font-semibold mb-2">Chart Previews</h3>
         {selectedCharts.length === 0 ? (
           <p className="text-gray-500">No charts selected.</p>
         ) : (
           <div className="grid grid-cols-1 gap-4">
-            {selectedCharts.map((chartId) => (
-              <canvas
-                key={chartId}
-                ref={(el) => (chartRefs.current[chartId] = el)}
-                width={600}
-                height={300}
-                style={{ background: "white", borderRadius: "8px" }}
-              />
-            ))}
+            {selectedCharts.map((chartId) => {
+              const chart = filteredCharts.find((c) => c.chartId === chartId);
+              if (!chart) return null;
+              if (!chartRefs.current[chartId]) {
+                chartRefs.current[chartId] = React.createRef();
+              }
+              return (
+                <div
+                  key={chartId}
+                  className="relative border border-[var(--border)] rounded p-2"
+                >
+                  <button
+                    onClick={() =>
+                      setSelectedCharts((prev) =>
+                        prev.filter((id) => id !== chartId)
+                      )
+                    }
+                    className="absolute top-2 z-10 right-2 text-red-500 hover:text-red-700"
+                    title="Remove chart"
+                  >
+                    ❌
+                  </button>
+
+                  <ChartCard
+                    chart={chart}
+                    index={chartId}
+                    rows={fileData.rows}
+                    readOnly
+                    canvasRef={chartRefs.current[chartId]}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* Saved Charts */}
       <div>
         <h3 className="text-xl font-semibold mb-2">Saved Charts</h3>
         {loading ? (
@@ -204,73 +307,98 @@ const ReportComponent = () => {
         ) : error ? (
           <p className="text-red-600">{error}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full table-auto border text-sm">
-              <thead className="bg-[var(--border)]">
-                <tr>
-                  <th className="px-4 py-2 border">Select</th>
-                  <th className="px-4 py-2 border">Chart Title</th>
-                  <th className="px-4 py-2 border">Type</th>
-                  <th className="px-4 py-2 border">X Axis</th>
-                  <th className="px-4 py-2 border">Y Axis</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCharts.map((chart) => (
-                  <tr key={chart.chartId} className="hover:bg-[var(--border)]">
-                    <td className="px-4 py-2 border text-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedCharts.includes(chart.chartId)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedCharts((prev) => [
-                              ...prev,
-                              chart.chartId,
-                            ]);
-                          } else {
-                            setSelectedCharts((prev) =>
-                              prev.filter((id) => id !== chart.chartId)
-                            );
-                          }
-                        }}
-                      />
-                    </td>
-                    <td className="px-4 py-2 border">{chart.title}</td>
-                    <td className="px-4 py-2 border">{chart.type}</td>
-                    <td className="px-4 py-2 border">
-                      {chart.config?.xAxis || "—"}
-                    </td>
-                    <td className="px-4 py-2 border">
-                      {chart.config?.yAxis || "—"}
-                    </td>
+          <>
+            <button
+              className="mb-2 text-sm text-blue-600 underline"
+              onClick={() => {
+                if (selectedCharts.length === filteredCharts.length) {
+                  setSelectedCharts([]);
+                } else {
+                  setSelectedCharts(filteredCharts.map((c) => c.chartId));
+                }
+              }}
+            >
+              {selectedCharts.length === filteredCharts.length
+                ? "Deselect All"
+                : "Select All"}
+            </button>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto border text-sm">
+                <thead className="bg-[var(--border)]">
+                  <tr>
+                    <th className="px-4 py-2 border">Select</th>
+                    <th className="px-4 py-2 border">Chart Title</th>
+                    <th className="px-4 py-2 border">Type</th>
+                    <th className="px-4 py-2 border">X Axis</th>
+                    <th className="px-4 py-2 border">Y Axis</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredCharts.map((chart) => (
+                    <tr
+                      key={chart.chartId}
+                      className="hover:bg-[var(--border)]"
+                    >
+                      <td className="px-4 py-2 border text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedCharts.includes(chart.chartId)}
+                          onChange={(e) => {
+                            const newSelection = e.target.checked
+                              ? [...selectedCharts, chart.chartId]
+                              : selectedCharts.filter(
+                                  (id) => id !== chart.chartId
+                                );
+                            setSelectedCharts(newSelection);
+                            setPreparationError("");
+                          }}
+                        />
+                      </td>
+                      <td className="px-4 py-2 border">{chart.title}</td>
+                      <td className="px-4 py-2 border">{chart.type}</td>
+                      <td className="px-4 py-2 border">
+                        {chart.config?.xAxis || "—"}
+                      </td>
+                      <td className="px-4 py-2 border">
+                        {chart.config?.yAxis || "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
       {selectedCharts.length > 0 && (
-        <div className="text-sm">
-          <strong>Selected Charts:</strong> {selectedCharts.join(", ")}
+        <div className="flex flex-wrap gap-2 mt-4">
+          <button
+            onClick={handleDownloadPDF}
+            disabled={generatingPDF}
+            className={`px-4 py-2 rounded ${
+              generatingPDF
+                ? "bg-gray-400 text-white cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-500 text-white"
+            }`}
+          >
+            {generatingPDF ? "Generating PDF..." : "Download PDF Report"}
+          </button>
+
+          <button
+            onClick={handleDownloadImagesZip}
+            disabled={generatingImg}
+            className={`px-4 py-2 rounded ${
+              generatingImg
+                ? "bg-gray-400 text-white cursor-not-allowed"
+                : "bg-purple-600 hover:bg-purple-500 text-white"
+            }`}
+          >
+            {generatingImg ? "Preparing ZIP..." : "Download Images ZIP"}
+          </button>
         </div>
       )}
-
-      <button
-        onClick={handleDownloadPDF}
-        className="mt-4 px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded"
-      >
-        Download PDF Report
-      </button>
-
-      <div className="mb-4">
-        <h3 className="text-xl font-semibold mb-2">File Data (Raw JSON)</h3>
-        <pre className="bg-[var(--border)] p-4 rounded text-xs overflow-auto max-h-96">
-          {JSON.stringify(fileData, null, 2)}
-        </pre>
-      </div>
     </div>
   );
 };

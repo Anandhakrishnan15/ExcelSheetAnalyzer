@@ -1,7 +1,7 @@
 "use client";
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect, useRef } from "react";
 import { useDropzone } from "react-dropzone";
-import { Code, Table, Download, Factory } from "lucide-react";
+import { Code, Table, Download } from "lucide-react";
 import { uploadExcel } from "../../services/AuthAPI";
 import DropzoneArea from "./DropzoneArea";
 import FileInfo from "./FileInfo";
@@ -9,14 +9,19 @@ import DataPreview from "./DataPreview";
 import * as XLSX from "xlsx";
 import AllUploedExels from "../ChartUploads/AllUploedExels";
 import { useExcelUpload } from "../../context/excelUploadcontext";
-
+import SavedCharts from "../SavedCharts";
+import { useNavigate } from "react-router-dom";
 
 export default function FileUpload() {
   const [file, setFile] = useState(null);
   const [jsonData, setJsonData] = useState(null);
   const [showTable, setShowTable] = useState(true);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
-  const [isloading,setIsloading ]= useState(false)
+  const [isloading, setIsloading] = useState(false);
+  const navigate = useNavigate();
+
+
+  const savedChartsRef = useRef(); // ref for refreshing SavedCharts
   const { getExcelData } = useExcelUpload();
 
   const onDrop = useCallback((acceptedFiles) => {
@@ -30,10 +35,8 @@ export default function FileUpload() {
         try {
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: "array" });
-
           const firstSheetName = workbook.SheetNames[0];
           const sheet = workbook.Sheets[firstSheetName];
-
           const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
           if (json.length === 0) {
@@ -43,7 +46,6 @@ export default function FileUpload() {
           }
 
           const fields = Object.keys(json[0]);
-
           setJsonData({ fields, rows: json });
         } catch (error) {
           console.error("Error parsing file:", error);
@@ -98,14 +100,14 @@ export default function FileUpload() {
     window.addEventListener("dragover", handleDragOver);
     window.addEventListener("drop", handleDrop);
 
-    return () => { //cleanup all the eventlisteners
+    return () => {
       window.removeEventListener("dragenter", handleDragEnter);
       window.removeEventListener("dragleave", handleDragLeave);
       window.removeEventListener("dragover", handleDragOver);
       window.removeEventListener("drop", handleDrop);
     };
   }, [onDrop]);
-  //downLoad the JSon button
+
   const handleDownloadJSON = () => {
     if (!jsonData) return;
     const blob = new Blob([JSON.stringify(jsonData.rows, null, 2)], {
@@ -118,10 +120,10 @@ export default function FileUpload() {
     a.click();
     URL.revokeObjectURL(url);
   };
-//the upload button
+
   const handleUploadClick = async () => {
     try {
-      setIsloading(true)
+      setIsloading(true);
       if (!file) {
         alert("Please select a file before uploading.");
         return;
@@ -134,24 +136,28 @@ export default function FileUpload() {
 
       const res = await uploadExcel(formData);
 
-      alert(`${file.name} has been uploaded to the server and database.`);
+      alert(`${file.name} has been uploaded successfully.`);
       console.log("✅ Upload successful:", res);
       await getExcelData();
+
+      // Refresh saved charts list
+      savedChartsRef.current?.refreshCharts();
     } catch (error) {
       console.error("❌ Upload failed:", error);
       alert("Upload failed. Check the console for details.");
-    }
-    finally{
-      setIsloading(false)
-      setFile(null)
-      setJsonData(null)
+    } finally {
+      setIsloading(false);
+      setFile(null);
+      setJsonData(null);
     }
   };
-  
+  const handleChartClick = (chart) => {
+    navigate(`/chart/${chart.chartId}`, { state: { chart } });
+  };
 
   return (
-    <div className=" w-full flex flex-col md:flex-row bg-[var(--bg)] text-[var(--text)]">
-      {/* Global Drag Overlay */}
+    <div className="w-full flex flex-col md:flex-row bg-[var(--bg)] text-[var(--text)]">
+      {/* Drag overlay */}
       {!file && isDraggingOver && (
         <div className="fixed inset-0 w-screen h-screen z-50 flex items-center justify-center bg-black/50 pointer-events-none p-5 border-4 border-dotted border-gray-700 box-border">
           <p className="text-white text-lg font-semibold">
@@ -188,19 +194,18 @@ export default function FileUpload() {
         <button
           onClick={handleUploadClick}
           className={`bg-green-600 text-white font-semibold px-4 py-2 rounded-lg shadow-md transition duration-300 ease-in-out transform 
-    hover:scale-105 hover:bg-green-700 hover:shadow-lg active:scale-95
-    disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none`}
+          hover:scale-105 hover:bg-green-700 hover:shadow-lg active:scale-95
+          disabled:bg-gray-400 disabled:cursor-not-allowed disabled:shadow-none`}
           disabled={!file}
         >
-         {!isloading ? "Upload":"uploading"} 
+          {!isloading ? "Upload" : "Uploading..."}
         </button>
-
         <div className="border-t w-full p-2.5">
           <AllUploedExels />
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main content */}
       <div className="flex-1 p-4 flex flex-col gap-4">
         {!file && (
           <DropzoneArea
@@ -218,7 +223,12 @@ export default function FileUpload() {
             }}
           />
         )}
-        { jsonData && <DataPreview jsonData={jsonData} showTable={showTable} />}
+        {jsonData && <DataPreview jsonData={jsonData} showTable={showTable} />}
+        {/* Saved Charts */}
+        <div className="mt-10">
+          <h2 className="text-xl font-bold mb-4">Your Saved Charts</h2>
+          <SavedCharts ref={savedChartsRef} onChartClick={handleChartClick} />
+        </div>
       </div>
     </div>
   );
