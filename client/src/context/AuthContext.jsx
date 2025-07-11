@@ -6,7 +6,8 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token") || null);
   const [userInfo, setUserInfo] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); 
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const login = (newToken) => {
     localStorage.setItem("token", newToken);
@@ -17,29 +18,32 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("token");
     setToken(null);
     setUserInfo(null);
+    setIsAdmin(false);
   };
 
   const isLoggedIn = !!token;
 
+  const fetchUserInfo = async () => {
+    if (!token) {
+      setUserInfo(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await getMe();
+      setUserInfo(res.data);
+      setIsAdmin(res.data.role === "admin");
+    } catch (error) {
+      console.error("Error fetching user info:", error);
+      logout();
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchUserInfo = async () => {
-      if (!token) {
-        setUserInfo(null);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const res = await getMe();
-        setUserInfo(res.data);
-      } catch (error) {
-        console.error("Error fetching user info:", error);
-        logout();
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUserInfo();
   }, [token]);
 
@@ -51,12 +55,14 @@ export const AuthProvider = ({ children }) => {
         logout,
         isLoggedIn,
         userInfo,
-        loading, // ✅ provide loading globally
+        isAdmin,
+        loading,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
 };
+
 
 export const useAuth = () => useContext(AuthContext);
