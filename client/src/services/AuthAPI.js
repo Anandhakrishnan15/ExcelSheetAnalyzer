@@ -38,3 +38,14 @@ export const getExceldata = () => API.get("/api/uploads/get")
 
 export const saveCharts = (payload) => API.post("/api/saved-graphs/save",payload)
 export const getSavedChart = () => API.get("api/saved-graphs/my")
+
+// API Generate AI Report (POST)
+export const generateAIReport = (payload) =>
+    API.post("/api/ai-summary", payload);
+
+// API Get All AI Reports (GET)
+export const getAIReports = () =>
+    API.get("/api/ai-summary");
+
+export const saveAIReportToChart = (payload) =>
+    API.post("/api/ai-summary/save-to-chart", payload);
