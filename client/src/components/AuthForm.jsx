@@ -13,7 +13,7 @@ const AuthForm = () => {
     password: "yourpassword123",
   });
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login,isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -29,14 +29,11 @@ const AuthForm = () => {
         ? await registerUser(formData)
         : await loginUser(formData);
 
-      const { token, user } = res.data;
+      const { token } = res.data;
 
       login(token);
-      console.log("Token:", token);
-      console.log("User:", user);
-
       alert(`${isSignup ? "Signup" : "Login"} successful!`);
-      navigate("/dashboard");
+      navigate("/profile");
     } catch (err) {
       console.error("Auth error:", err.response?.data?.message || err.message);
       alert("Authentication failed. Please check your credentials.");
