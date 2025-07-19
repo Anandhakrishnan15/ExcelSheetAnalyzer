@@ -9,6 +9,8 @@ const getuserRouter = require ("./routers/getUserInfo")
 const upload = require('./routers/upload')
 const savedGraphRoutes = require('./routers/savedGraphRoutes')
 const aiReportRoutes = require("./routers/aiReportRoutes");
+const dashboardRoutes = require("./routers/dashboard");
+const alldashboardRoutes =require("./routers/alldashboardRoutes")
 
 
 const app = express();
@@ -27,6 +29,8 @@ app.use("/api/users", getuserRouter )
 app.use('/api/uploads', upload )
 app.use("/api/saved-graphs", savedGraphRoutes);
 app.use("/api/ai-summary", aiReportRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api", alldashboardRoutes)
 
 
 // Start the server

@@ -7,9 +7,11 @@ import {
   BarElement,
   LineElement,
   PointElement,
+  Filler,
   ArcElement,
   Tooltip,
   Legend,
+  ScatterController,
 } from "chart.js";
 
 ChartJS.register(
@@ -17,10 +19,12 @@ ChartJS.register(
   LinearScale,
   BarElement,
   LineElement,
+  Filler,
   PointElement,
   ArcElement,
   Tooltip,
-  Legend
+  Legend,
+  ScatterController 
 );
 
 const generateColors = (count, alpha = 1) => {

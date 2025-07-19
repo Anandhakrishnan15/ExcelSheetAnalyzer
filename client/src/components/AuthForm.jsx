@@ -3,6 +3,8 @@ import "./styles/Auth.css";
 import { loginUser, registerUser } from "../services/AuthAPI";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+
 
 const AuthForm = () => {
   const [isSignup, setIsSignup] = useState(false);
@@ -20,27 +22,44 @@ const AuthForm = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+ const handleSubmit = async (e) => {
+   e.preventDefault();
 
-    try {
-      const res = isSignup
-        ? await registerUser(formData)
-        : await loginUser(formData);
+   // Show a toast while promise is pending
+   setLoading(true);
 
-      const { token } = res.data;
+   const authPromise = isSignup ? registerUser(formData) : loginUser(formData);
 
-      login(token);
-      alert(`${isSignup ? "Signup" : "Login"} successful!`);
-      navigate("/profile");
-    } catch (err) {
-      console.error("Auth error:", err.response?.data?.message || err.message);
-      alert("Authentication failed. Please check your credentials.");
-    } finally {
-      setLoading(false);
-    }
-  };
+   toast.promise(authPromise, {
+     pending: `${isSignup ? "Signing up" : "Logging in"}...`,
+     success: `${isSignup ? "Signup" : "Login"} successful!`,
+     error: {
+       render({ data }) {
+         // You can customize error messages
+         const message =
+           data?.response?.data?.message ||
+           data?.message ||
+           "Authentication failed.";
+         return message;
+       },
+     },
+   });
+
+   try {
+     const res = await authPromise;
+
+     const { token } = res.data;
+
+     login(token);
+     navigate("/profile");
+   } catch (err) {
+     console.error("Auth error:", err);
+     // Error is handled by toast.promise error renderer
+   } finally {
+     setLoading(false);
+   }
+ };
+
 
   return (
     <div className="auth-container">

@@ -13,7 +13,7 @@ const ChartComponent = () => {
     useOutletContext();
 
   const [charts, setCharts] = useState([
-    { id: 1, title: "Chart 1", xAxis: "", yAxis: "", graphType: "bar" },
+    { id: 1, title: "Chart 1", xAxis: "", yAxis: "", graphType: "" },
   ]);
   const [savedIndexes, setSavedIndexes] = useState([]);
 
@@ -49,7 +49,7 @@ const ChartComponent = () => {
           {
             chartId: generateChartId(),
             title: chart.title,
-            type: chart.graphType,
+            type: chart.type,
             uploadedFile: fileData._id,
             config: {
               xAxis: chart.xAxis,
