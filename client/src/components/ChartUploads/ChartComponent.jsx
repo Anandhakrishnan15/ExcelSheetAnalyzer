@@ -4,6 +4,7 @@ import ChartCard from "./ChartCard";
 import { saveCharts } from "../../services/AuthAPI";
 import ChartPreview from "./ChartPreview";
 import { useChartRefresh } from "../../context/ChartRefreshContext";
+import { toast } from "react-toastify";
 
 const ChartComponent = () => {
   const { filename } = useParams();
@@ -65,11 +66,11 @@ const ChartComponent = () => {
       console.log(" Chart saved:", res.data);
 
       setSavedIndexes((prev) => [...prev,chart.id]);
-      alert("Chart saved successfully!");
+      toast.success("Chart saved successfully!");
       savedChartsRef.current?.refreshCharts();
     } catch (error) {
       console.error("Save failed:", error.response?.data || error.message);
-      alert("Failed to save chart.");
+      toast.error("Failed to save chart.");
     }
   };
   

@@ -47,12 +47,10 @@ exports.saveCharts = async (req, res) => {
 exports.getMyCharts = async (req, res) => {
     try {
         const savedGraph = await SavedGraph.findOne({ user: req.user._id });
-
         if (!savedGraph) {
             return res.status(404).json({ message: "No saved charts found." });
         }
-
-        res.status(200).json(savedGraph.charts);
+        res.status(200).json(savedGraph.charts||[]);
     } catch (error) {
         console.error("Error fetching charts:", error);
         res.status(500).json({ message: "Server error" });

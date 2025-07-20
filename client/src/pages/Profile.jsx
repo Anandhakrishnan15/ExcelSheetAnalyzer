@@ -12,8 +12,6 @@ import ProfileRecentReports from "../components/Profile/ProfileRecentReports";
 import MyComponent from "../components/ChartUploads/AllUploedExels";
 import { toast } from "react-toastify";
 
-// import { ToastContainer, toast } from "react-toastify";
-// import "react-toastify/dist/ReactToastify.css";
 
 export const Profile = () => {
   const { userInfo, isLoggedIn, logout } = useAuth();
@@ -70,7 +68,7 @@ export const Profile = () => {
         />
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col md:items-center h-[100vh] p-6 overflow-y-auto scrollbar-none">
+        <main className="flex-1 flex flex-col md:items-center h-[110vh] p-6 overflow-y-auto scrollbar-none">
           <div className="flex justify-between gap-2 mb-4 lg:hidden">
             <button
               className="px-3 py-1 bg-blue-600 text-white rounded"

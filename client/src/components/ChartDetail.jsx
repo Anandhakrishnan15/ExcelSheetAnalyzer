@@ -15,7 +15,6 @@ const ChartDetail = () => {
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
   const [activeTab, setActiveTab] = useState("Chart");
-console.log("cahrtdetialas ",chart);
 
   const canvasRef = useRef();
 

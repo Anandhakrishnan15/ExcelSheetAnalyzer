@@ -18,12 +18,15 @@ import { Bounce, ToastContainer} from "react-toastify";
 import AdminUserProfile from "./pages/AdminUserProfile";
 import { ProfilePageProvider } from "./context/ProfilePageContext";
 import { AdminUserActionsProvider } from "./context/AdminUserActionsContext";
+import Charts from "./pages/Charts";
+import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
   return (
     <>
       {/* <h1>hello team</h1> */}
       <Navbar />
+      <ScrollToTop />
       <ToastContainer
         ToastContainer
         position="top-right"
@@ -41,12 +44,13 @@ function App() {
       <Routes>
         <Route path="/auth" element={<Auth />} />
 
+        <Route path="/" element={<Home />} />
         <Route
-          path="/"
+          path="/charts"
           element={
-            // <PrivateRoute>
-            <Home />
-            // </PrivateRoute>
+            <ProfilePageProvider>
+              <Charts />
+            </ProfilePageProvider>
           }
         />
 
@@ -84,7 +88,7 @@ function App() {
           element={
             <PrivateRoute adminOnly={true}>
               <AdminUserActionsProvider>
-              <Dashboard />
+                <Dashboard />
               </AdminUserActionsProvider>
             </PrivateRoute>
           }
@@ -94,7 +98,7 @@ function App() {
           element={
             <PrivateRoute adminOnly={true}>
               <AdminUserActionsProvider>
-              <AdminUserProfile />
+                <AdminUserProfile />
               </AdminUserActionsProvider>
             </PrivateRoute>
           }

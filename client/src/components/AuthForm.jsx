@@ -11,7 +11,7 @@ const AuthForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
-    email: "anandha@example.com",
+    email: "",
     password: "yourpassword123",
   });
   const [loading, setLoading] = useState(false);

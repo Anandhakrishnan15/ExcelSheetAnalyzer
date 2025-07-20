@@ -5,6 +5,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ChartCard from "./ChartUploads/ChartCard";
 import JSZip from "jszip";
+import ChartSummary from "./ChartSummary";
 
 const ReportComponent = () => {
   const { filename } = useParams();
@@ -20,7 +21,7 @@ const ReportComponent = () => {
   const [preparationError, setPreparationError] = useState("");
 
   const chartRefs = useRef({});
-console.log('this is reposcompinet pafe ', charts);
+// console.log('this is reposcompinet pafe ', charts);
 
   useEffect(() => {
     const fetchCharts = async () => {
@@ -40,6 +41,23 @@ console.log('this is reposcompinet pafe ', charts);
   const filteredCharts = charts.filter(
     (chart) => chart.uploadedFile === fileData?._id
   );
+  const refreshChartFromServer = async (chartId) => {
+  try {
+    const res = await getSavedChart();
+    const updatedChart = res.data.find((c) => c.chartId === chartId);
+
+    if (updatedChart) {
+      setCharts((prevCharts) =>
+        prevCharts.map((chart) =>
+          chart.chartId === chartId ? updatedChart : chart
+        )
+      );
+    }
+  } catch (err) {
+    console.error("Failed to refresh chart:", err);
+  }
+};
+
 
   // Reusable canvas wait logic
   const waitForCanvases = async (
@@ -292,6 +310,10 @@ console.log('this is reposcompinet pafe ', charts);
                     rows={fileData.rows}
                     readOnly
                     canvasRef={chartRefs.current[chartId]}
+                  />
+                  <ChartSummary
+                    chart={chart}
+                    onSummarySaved={() => refreshChartFromServer(chart.chartId)}
                   />
                 </div>
               );

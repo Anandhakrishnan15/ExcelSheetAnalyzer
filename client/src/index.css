@@ -30,6 +30,7 @@ body.dark {
   --text: #f5f5f5;
   --card: #2a2a2a;
   --border: #444;
+  --nav:#222
 }
 
 /* Optional gradient for light mode */
@@ -38,6 +39,7 @@ body.light {
   --text: #111;
   --card: #fff;
   --border: #ccc;
+  --nav:#f5f5f5
 }
 
 /* Utility styles */
