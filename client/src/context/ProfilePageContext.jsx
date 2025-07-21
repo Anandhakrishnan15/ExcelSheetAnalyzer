@@ -13,9 +13,7 @@ export const ProfilePageProvider = ({ children }) => {
     loadingCharts: true,
     recentCharts: [],
   });
-  console.log('====================================');
-  console.log(state);
-  console.log('====================================');
+
 
   useEffect(() => {
     const fetchProfileData = async () => {
