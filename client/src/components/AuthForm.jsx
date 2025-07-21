@@ -12,7 +12,7 @@ const AuthForm = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "yourpassword123",
+    password: "",
   });
   const [loading, setLoading] = useState(false);
   const { login,isAdmin } = useAuth();
