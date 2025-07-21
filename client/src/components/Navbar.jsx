@@ -18,6 +18,7 @@ function Navbar() {
 
 
 
+  
   const handleNavClick = () => {
     setMenuOpen(false); // Close menu when any link is clicked
   };
