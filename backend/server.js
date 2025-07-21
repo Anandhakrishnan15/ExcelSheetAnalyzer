@@ -21,7 +21,7 @@ connectDB();
 
 // Allowed origins
 const allowedOrigins = [
-    "https://chartmate.netlify.app/", // Replace this with your deployed frontend URL
+    "https://chartmate.netlify.app", // Replace this with your deployed frontend URL
     "http://localhost:5173",
     // "https://your-backend-domain.up.railway.app",
 ];
