@@ -125,7 +125,7 @@ const Home = () => {
         </section>
 
         {/* Call to Action */}
-        {token && (
+        {!token && (
           <section className="text-center">
             <Link
               to="/auth"
