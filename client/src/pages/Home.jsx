@@ -1,7 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const Home = () => {
+  const {token} = useAuth()
   return (
     <div className="min-h-screen px-6 py-10">
       <div className="max-w-5xl mx-auto space-y-10">
@@ -123,14 +125,16 @@ const Home = () => {
         </section>
 
         {/* Call to Action */}
-        <section className="text-center">
-          <Link
-            to="/auth"
-            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition text-lg"
-          >
-            Get Started – Sign Up & Upload Your File
-          </Link>
-        </section>
+        {token && (
+          <section className="text-center">
+            <Link
+              to="/auth"
+              className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition text-lg"
+            >
+              Get Started – Sign Up & Upload Your File
+            </Link>
+          </section>
+        )}
       </div>
     </div>
   );
