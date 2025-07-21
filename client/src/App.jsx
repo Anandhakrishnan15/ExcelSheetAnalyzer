@@ -20,6 +20,7 @@ import { ProfilePageProvider } from "./context/ProfilePageContext";
 import { AdminUserActionsProvider } from "./context/AdminUserActionsContext";
 import Charts from "./pages/Charts";
 import ScrollToTop from "./components/ScrollToTop";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -115,6 +116,7 @@ function App() {
             </PrivateRoute>
           }
         />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );

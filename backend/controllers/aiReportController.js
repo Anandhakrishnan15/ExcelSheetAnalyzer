@@ -170,9 +170,9 @@ exports.getAllReports = async (req, res) => {
         const userId = req.user._id;
         const reportDoc = await AIReport.findOne({ user: userId });
 
-        // if (!reportDoc) {
-        //     return res.status(404).json({ message: "No reports found for this user." });
-        // }
+        if (!reportDoc) {
+            return res.status(404).json({ message: "No reports found for this user." });
+        }
 
         res.status(200).json({
             reports: reportDoc.reports ||[]
