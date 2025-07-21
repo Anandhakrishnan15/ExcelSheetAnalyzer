@@ -21,9 +21,9 @@ connectDB();
 
 // Allowed origins
 const allowedOrigins = [
+    "https://chartmate.netlify.app/", // Replace this with your deployed frontend URL
     "http://localhost:5173",
-    "https://your-frontend-domain.netlify.app", // Replace this with your deployed frontend URL
-    "https://your-backend-domain.up.railway.app",
+    // "https://your-backend-domain.up.railway.app",
 ];
 
 // Middleware
@@ -56,7 +56,9 @@ app.use(express.static(path.join(__dirname, "../client/dist")));
 // app.get("*", (req, res) => {
 //     res.sendFile(path.join(__dirname, "../client/dist/index.html"));
 // });
-
+app.get("/", (req, res) => {
+    res.send("Backend is running 🚀");
+});
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
