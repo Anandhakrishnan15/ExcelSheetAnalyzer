@@ -9,8 +9,7 @@ function Navbar() {
     localStorage.getItem("theme") === "dark"
   );
 
-  const { token, logout, isAdmin } = useAuth();
-  const navigate = useNavigate();
+  const { token, isAdmin } = useAuth();
 
   useEffect(() => {
     document.body.className = darkMode ? "dark" : "light";
@@ -32,6 +31,7 @@ function Navbar() {
       </div>
 
       <div className={`navbar-links ${menuOpen ? "active" : ""}`}>
+
         <NavLink to="/" className="nav-link" onClick={handleNavClick}>
           DOC
         </NavLink>
