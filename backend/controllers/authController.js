@@ -31,7 +31,7 @@ exports.registerUser = async (req, res) => {
         const token = generateToken(user); // generate the token
         res.status(201).json({ token }); //send the token to the frontend
     } catch (error) {
-        console.error(`Registration error:`, error.message);
+        // console.error(`Registration error:`, error.message);
         res.status(500).json({ message: 'Registration error' });
     }
 };
@@ -47,14 +47,13 @@ exports.loginUser = async (req, res) => {
 
         const isMatch = await bcrypt.compare(password, user.password); // cheking the given pwd is same as the bcrpt pwd from teh user colletion
         if (!isMatch) return res.status(401).json({ message: 'Invalid email or password' });//if not  there return invalid email or password
-
-        console.log(`Login successful: ${email}`);
+        if (user.blocked) return res.status(401).json({ message: " You'r ACC is Blocked" });
 
         const token = generateToken(user); //generat the token
 
         res.status(200).json({ token }); //give token to store in the localstoreage
     } catch (error) {
-        console.error(`Login error:`, error.message);
+        // console.error(`Login error:`, error.message);
         res.status(500).json({ message: 'Login error' });
     }
 };

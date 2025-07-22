@@ -175,7 +175,7 @@ exports.getAllReports = async (req, res) => {
         }
 
         res.status(200).json({
-            reports: reportDoc.reports
+            reports: reportDoc.reports ||[]
         });
     } catch (error) {
         console.error("Error fetching reports:", error);
@@ -215,3 +215,47 @@ exports.saveAIReportToChart = async (req, res) => {
         res.status(500).json({ message: "Server error." });
     }
 };
+exports.incrementdownloadCount = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { chartId, type } = req.body;
+
+        if (!chartId || !type) {
+            return res.status(400).json({ message: "Missing chartId or type." });
+        }
+
+        const savedGraph = await SavedGraph.findOne({ user: userId });
+
+        if (!savedGraph) {
+            return res.status(404).json({ message: "Saved graphs not found for user." });
+        }
+
+        const chart = savedGraph.charts.find((c) => c.chartId === chartId);
+
+        if (!chart) {
+            return res.status(404).json({ message: "Chart not found." });
+        }
+
+        if (type === "image") {
+            chart.downloedGraphIMages = (chart.downloedGraphIMages || 0) + 1;
+        } else if (type === "pdf") {
+            chart.downloedGraphPDF = (chart.downloedGraphPDF || 0) + 1;
+        } else {
+            return res.status(400).json({ message: "Invalid type. Must be 'image' or 'pdf'." });
+        }
+
+        await savedGraph.save();
+
+        res.status(200).json({
+            message: "Download count updated successfully.",
+            counts: {
+                imageDownloads: chart.downloedGraphIMages || 0,
+                pdfDownloads: chart.downloedGraphPDF || 0,
+            },
+        });
+    } catch (error) {
+        console.error(" Error incrementing download count:", error);
+        res.status(500).json({ message: "Server error." });
+    }
+};
+

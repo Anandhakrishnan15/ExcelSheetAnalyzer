@@ -11,24 +11,47 @@ import ChartComponent from "./components/ChartUploads/ChartComponent"
 import ChartLayout from "./components/ChartUploads/ChartLayout";
 import ReportComponent from "./components/ReportComponent";
 import { ChartRefreshProvider } from "./context/ChartRefreshContext";
-import { useAuth } from "./context/AuthContext";
+// import { useAuth } from "./context/AuthContext";
 import ChartDetail from "./components/ChartDetail";
+import { Bounce, ToastContainer} from "react-toastify";
+// import { DashboardProvider } from "./context/DashboardContext";
+import AdminUserProfile from "./pages/AdminUserProfile";
+import { ProfilePageProvider } from "./context/ProfilePageContext";
+import { AdminUserActionsProvider } from "./context/AdminUserActionsContext";
+import Charts from "./pages/Charts";
+import ScrollToTop from "./components/ScrollToTop";
+import NotFound from "./pages/NotFound";
 
 function App() {
-  const { isAdmin } = useAuth();
   return (
     <>
       {/* <h1>hello team</h1> */}
       <Navbar />
+      <ScrollToTop />
+      <ToastContainer
+        ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        transition={Bounce}
+      />
       <Routes>
         <Route path="/auth" element={<Auth />} />
 
+        <Route path="/" element={<Home />} />
         <Route
-          path="/"
+          path="/charts"
           element={
-            // <PrivateRoute>
-            <Home />
-            // </PrivateRoute>
+            <ProfilePageProvider>
+              <Charts />
+            </ProfilePageProvider>
           }
         />
 
@@ -65,7 +88,19 @@ function App() {
           path="/dashboard"
           element={
             <PrivateRoute adminOnly={true}>
-              <Dashboard />
+              <AdminUserActionsProvider>
+                <Dashboard />
+              </AdminUserActionsProvider>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/user/:id"
+          element={
+            <PrivateRoute adminOnly={true}>
+              <AdminUserActionsProvider>
+                <AdminUserProfile />
+              </AdminUserActionsProvider>
             </PrivateRoute>
           }
         />
@@ -75,10 +110,13 @@ function App() {
           path="/profile"
           element={
             <PrivateRoute>
-              <Profile />
+              <ProfilePageProvider>
+                <Profile />
+              </ProfilePageProvider>
             </PrivateRoute>
           }
         />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );

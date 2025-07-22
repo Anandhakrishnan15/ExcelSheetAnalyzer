@@ -1,12 +1,12 @@
 import React from "react";
 import { useExcelUpload } from "../../context/excelUploadcontext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { SquareArrowOutUpRight } from "lucide-react";
 
 const AllUploedExels = () => {
   const { excelData, loading, error } = useExcelUpload();
   const navigate = useNavigate();
-  
+
   if (loading) return <div>Loading Excel Data...</div>;
   if (error) return <div>Error: {error.message}</div>;
 
@@ -17,7 +17,15 @@ const AllUploedExels = () => {
       </div>
 
       {excelData.length === 0 ? (
-        <p className="text-gray-500">No files uploaded yet.</p>
+        <div className="text-gray-500">
+          <p>No files uploaded yet.</p>
+          <Link
+            to="/upload"
+            className=" text-gray-500 hover:text-indigo-500 transition"
+          >
+            Click here to upload files
+          </Link>
+        </div>
       ) : (
         <ul className="space-y-2">
           {excelData.map((file) => (

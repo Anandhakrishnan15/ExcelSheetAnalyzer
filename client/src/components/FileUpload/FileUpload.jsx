@@ -1,4 +1,3 @@
-"use client";
 import React, { useCallback, useState, useEffect, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import { Code, Table, Download } from "lucide-react";
@@ -11,6 +10,8 @@ import AllUploedExels from "../ChartUploads/AllUploedExels";
 import { useExcelUpload } from "../../context/excelUploadcontext";
 import SavedCharts from "../SavedCharts";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+
 
 export default function FileUpload() {
   const [file, setFile] = useState(null);
@@ -121,36 +122,38 @@ export default function FileUpload() {
     URL.revokeObjectURL(url);
   };
 
-  const handleUploadClick = async () => {
-    try {
-      setIsloading(true);
-      if (!file) {
-        alert("Please select a file before uploading.");
-        return;
-      }
+const handleUploadClick = async () => {
+  try {
+    setIsloading(true);
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("fileName", file.name);
-      formData.append("rows", JSON.stringify(jsonData.rows));
-
-      const res = await uploadExcel(formData);
-
-      alert(`${file.name} has been uploaded successfully.`);
-      console.log("✅ Upload successful:", res);
-      await getExcelData();
-
-      // Refresh saved charts list
-      savedChartsRef.current?.refreshCharts();
-    } catch (error) {
-      console.error("❌ Upload failed:", error);
-      alert("Upload failed. Check the console for details.");
-    } finally {
-      setIsloading(false);
-      setFile(null);
-      setJsonData(null);
+    if (!file) {
+      toast.warn("⚠️ Please select a file before uploading.");
+      return;
     }
-  };
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("fileName", file.name);
+    formData.append("rows", JSON.stringify(jsonData.rows));
+
+    const res = await uploadExcel(formData);
+
+    toast.success(`✅ ${file.name} has been uploaded successfully.`);
+    console.log("✅ Upload successful:", res);
+    await getExcelData();
+
+    // Refresh saved charts list
+    savedChartsRef.current?.refreshCharts();
+  } catch (error) {
+    console.error("❌ Upload failed:", error);
+    toast.error("❌ Upload failed. Check the console for details.");
+  } finally {
+    setIsloading(false);
+    setFile(null);
+    setJsonData(null);
+  }
+};
+
   const handleChartClick = (chart) => {
     navigate(`/chart/${chart.chartId}`, { state: { chart } });
   };

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { generateAIReport, saveAIReportToChart } from "../services/AuthAPI";
+import { toast } from "react-toastify";
+
 
 const ChartSummary = ({ chart, onSummarySaved }) => {
   const [summary, setSummary] = useState(chart.AIReport || "");
@@ -8,54 +10,86 @@ const ChartSummary = ({ chart, onSummarySaved }) => {
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(!!chart.AIReport);
 
-  const handleGenerateSummary = async () => {
-    setLoading(true);
-    setError("");
+ const handleGenerateSummary = async () => {
+   setLoading(true);
+   setError("");
 
-    try {
-      const response = await generateAIReport({
-        chartId: chart.chartId,
-        title: chart.title,
-        type: chart.type,
-        uploadedFile: chart.uploadedFile,
-        data: chart.data,
-        config: chart.config,
-      });
+   const generatePromise = generateAIReport({
+     chartId: chart.chartId,
+     title: chart.title,
+     type: chart.type,
+     uploadedFile: chart.uploadedFile,
+     data: chart.data,
+     config: chart.config,
+   });
 
-      setSummary(response.data.report);
-      setSaved(false);
-    } catch (err) {
-      console.error("Failed to generate summary:", err);
-      setError(
-        err.response?.data?.message ||
-          "Error generating summary. Try again later."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+   toast.promise(generatePromise, {
+     pending: "Generating summary...",
+     success: "Summary generated successfully!",
+     error: {
+       render({ data }) {
+         const message =
+           data?.response?.data?.message ||
+           data?.message ||
+           "Error generating summary.";
+         return message;
+       },
+     },
+   });
 
-  const handleSaveSummary = async () => {
-    if (!summary) return;
-    setSaving(true);
-    setError("");
+   try {
+     const response = await generatePromise;
+     setSummary(response.data.report);
+     setSaved(false);
+   } catch (err) {
+     console.error("Failed to generate summary:", err);
+     setError(
+       err.response?.data?.message ||
+         "Error generating summary. Try again later."
+     );
+   } finally {
+     setLoading(false);
+   }
+ };
 
-    try {
-      await saveAIReportToChart({
-        chartId: chart.chartId,
-        generatedReport: summary,
-      });
-      setSaved(true);
-      if (onSummarySaved) onSummarySaved(); // Refresh parent chart data
-    } catch (err) {
-      console.error("Failed to save summary:", err);
-      setError(
-        err.response?.data?.message || "Error saving summary. Try again later."
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
+ const handleSaveSummary = async () => {
+   if (!summary) return;
+   setSaving(true);
+   setError("");
+
+   const savePromise = saveAIReportToChart({
+     chartId: chart.chartId,
+     generatedReport: summary,
+   });
+
+   toast.promise(savePromise, {
+     pending: "Saving summary...",
+     success: "Summary saved successfully!",
+     error: {
+       render({ data }) {
+         const message =
+           data?.response?.data?.message ||
+           data?.message ||
+           "Error saving summary.";
+         return message;
+       },
+     },
+   });
+
+   try {
+     await savePromise;
+     setSaved(true);
+     if (onSummarySaved) onSummarySaved(); // Refresh parent chart data
+   } catch (err) {
+     console.error("Failed to save summary:", err);
+     setError(
+       err.response?.data?.message || "Error saving summary. Try again later."
+     );
+   } finally {
+     setSaving(false);
+   }
+ };
+
 
   return (
     <div className="p-4 border rounded bg-[var(--card)]">
