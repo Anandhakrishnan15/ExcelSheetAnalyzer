@@ -43,7 +43,7 @@ const ChartComponent = () => {
   const handleSave = async (chart, index) => {
     try {
       const chartRows = fileData?.rows || [];
-      console.log("saving chart data rows:", chartRows);
+      // console.log("saving chart data rows:", chartRows);
 
       const payload = {
         charts: [
