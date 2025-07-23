@@ -31,7 +31,7 @@ const ChartDetail = () => {
         setChart(found);
         setTimeout(() => setReady(true), 500);
       } catch (err) {
-        console.error("Failed to fetch chart:", err);
+        // console.error("Failed to fetch chart:", err);
         alert("Error loading chart.");
         navigate("/upload");
       } finally {

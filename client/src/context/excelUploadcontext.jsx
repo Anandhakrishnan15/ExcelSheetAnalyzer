@@ -24,16 +24,16 @@ export const ExcelUploadProvider = ({ children }) => {
 
       setExcelData(data);
 
-      data.forEach((file) => {
-        if (file.source === "multer" && file.fileExists) {
-          console.log(`File "${file.fileName}" available on disk.`);
-        } else {
-          console.log(`File "${file.fileName}" only available in database.`);
-        }
-      });
+      // data.forEach((file) => {
+      //   if (file.source === "multer" && file.fileExists) {
+      //     console.log(`File "${file.fileName}" available on disk.`);
+      //   } else {
+      //     console.log(`File "${file.fileName}" only available in database.`);
+      //   }
+      // });
     
     } catch (err) {
-      console.error("❌ Error fetching Excel data:", err);
+      // console.error("❌ Error fetching Excel data:", err);
       setError(err);
     } finally {
       setLoading(false);
@@ -41,9 +41,12 @@ export const ExcelUploadProvider = ({ children }) => {
   };
 
   // when the token get chnages it will get the data fo that perticulaer user
-  useEffect(() => {
+useEffect(() => {
+  if (token && excelData.length === 0) {
     getExcelData();
-  }, [token]);
+  }
+}, [token]);
+
 
   return (
     <ExcelUploadContext.Provider
