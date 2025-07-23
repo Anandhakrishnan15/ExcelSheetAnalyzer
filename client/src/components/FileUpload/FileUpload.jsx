@@ -138,14 +138,14 @@ const handleUploadClick = async () => {
 
     const res = await uploadExcel(formData);
 
-    toast.success(`✅ ${file.name} has been uploaded successfully.`);
-    console.log("✅ Upload successful:", res);
+    toast.success(`${file.name} uploaded successfully.`);
+    // console.log("Upload successful:", res.data.data.fileName);
     await getExcelData();
 
     // Refresh saved charts list
     savedChartsRef.current?.refreshCharts();
   } catch (error) {
-    console.error("❌ Upload failed:", error);
+    // console.error("❌ Upload failed:", error);
     toast.error("❌ Upload failed. Check the console for details.");
   } finally {
     setIsloading(false);
