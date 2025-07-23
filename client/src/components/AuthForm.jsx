@@ -4,6 +4,7 @@ import { loginUser, registerUser } from "../services/AuthAPI";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { Eye, EyeOff } from "lucide-react";
 
 
 const AuthForm = () => {
@@ -96,14 +97,16 @@ const AuthForm = () => {
             value={formData.password}
             onChange={handleChange}
             required
+            autoComplete={isSignup ? "new-password" : "current-password"}
           />
+
           <span
             type="button"
             className="password-toggle"
             onClick={() => setShowPassword(!showPassword)}
             aria-label="Toggle password visibility"
           >
-            {showPassword ? "🙈" : "👁️"}
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
           </span>
         </div>
 
