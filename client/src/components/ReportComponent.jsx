@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useOutletContext, useNavigate } from "react-router-dom";
-import { getSavedChart } from "../services/AuthAPI";
+import { getSavedChart, incrementDownload } from "../services/AuthAPI";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ChartCard from "./ChartUploads/ChartCard";
 import JSZip from "jszip";
 import ChartSummary from "./ChartSummary";
+import { toast } from "react-toastify";
 
 const ReportComponent = () => {
   const { filename } = useParams();
@@ -29,7 +30,7 @@ const ReportComponent = () => {
         const response = await getSavedChart();
         setCharts(response.data || []);
       } catch (err) {
-        console.error("Error fetching charts:", err);
+        // console.error("Error fetching charts:", err);
         setError("Failed to load charts.");
       } finally {
         setLoading(false);
@@ -76,103 +77,111 @@ const ReportComponent = () => {
       waited += interval;
     }
   };
+const handleDownloadPDF = async () => {
+  setPreparationError("");
+  setGeneratingPDF(true);
 
-  const handleDownloadPDF = async () => {
-    setPreparationError("");
-    setGeneratingPDF(true);
+  const ready = await waitForCanvases(selectedCharts);
+  if (!ready) {
+    setGeneratingPDF(false);
+    setPreparationError(
+      "Some charts could not be prepared. Please wait a moment after selecting before downloading."
+    );
+    return;
+  }
 
-    const ready = await waitForCanvases(selectedCharts);
-    if (!ready) {
-      setGeneratingPDF(false);
-      setPreparationError(
-        "Some charts could not be prepared. Please wait a moment after selecting before downloading."
-      );
-      return;
-    }
+  const doc = new jsPDF();
+  doc.setFontSize(18);
+  doc.text(`Report: ${fileData.fileName}`, 14, 20);
 
-    const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text(`Report: ${fileData.fileName}`, 14, 20);
+  let yOffset = 30;
+  const pageHeight = doc.internal.pageSize.getHeight();
 
-    let yOffset = 30;
-    const pageHeight = doc.internal.pageSize.getHeight();
+  for (const chartId of selectedCharts) {
+    const chart = filteredCharts.find((c) => c.chartId === chartId);
+    const canvas = chartRefs.current[chartId]?.current;
+    const dataUrl = canvas?.toDataURL("image/png");
 
-    for (const chartId of selectedCharts) {
-      const chart = filteredCharts.find((c) => c.chartId === chartId);
-      const canvas = chartRefs.current[chartId]?.current;
-      const dataUrl = canvas?.toDataURL("image/png");
+    if (!chart || !dataUrl) continue;
 
-      if (!chart || !dataUrl) continue;
+    const estimatedHeight = 90 + (chart.AIReport ? 50 : 0);
 
-      const estimatedHeight = 90 + (chart.AIReport ? 50 : 0); // basic estimate
-
-      if (yOffset + estimatedHeight > pageHeight - 20) {
-        doc.addPage();
-        yOffset = 20;
-      }
-
-      doc.setFontSize(14);
-      doc.text(chart.title || `Chart - ${chartId}`, 15, yOffset);
-      yOffset += 8;
-
-      doc.addImage(dataUrl, "PNG", 15, yOffset, 180, 80);
-      yOffset += 90;
-
-      if (chart.AIReport) {
-        doc.setFontSize(12);
-        doc.text("AI Generated Summary:", 15, yOffset + 6);
-        const summaryLines = doc.splitTextToSize(chart.AIReport, 180);
-        doc.setFontSize(10);
-
-        if (yOffset + 14 + summaryLines.length * 5 > pageHeight - 20) {
-          doc.addPage();
-          yOffset = 20;
-          doc.setFontSize(12);
-          doc.text("AI Generated Summary:", 15, yOffset);
-          yOffset += 6;
-        } else {
-          yOffset += 14;
-        }
-
-        doc.text(summaryLines, 15, yOffset);
-        yOffset += summaryLines.length * 5;
-      }
-
-      yOffset += 10; // spacing before next chart
-    }
-
-    // Add Data Table
-    if (yOffset + 30 > pageHeight - 20) {
+    if (yOffset + estimatedHeight > pageHeight - 20) {
       doc.addPage();
       yOffset = 20;
     }
 
-    const fieldsSet = new Set();
-    selectedCharts.forEach((chartId) => {
-      const chart = filteredCharts.find((c) => c.chartId === chartId);
-      if (chart?.config?.xAxis) fieldsSet.add(chart.config.xAxis);
-      if (chart?.config?.yAxis) fieldsSet.add(chart.config.yAxis);
-    });
+    doc.setFontSize(14);
+    doc.text(chart.title || `Chart - ${chartId}`, 15, yOffset);
+    yOffset += 8;
 
-    const fields =
-      Array.from(fieldsSet).length > 0
-        ? Array.from(fieldsSet)
-        : Object.keys(fileData.rows[0] || {});
+    doc.addImage(dataUrl, "PNG", 15, yOffset, 180, 80);
+    yOffset += 90;
 
-    const body = fileData.rows.map((row) => fields.map((f) => row[f] ?? "—"));
+    if (chart.AIReport) {
+      doc.setFontSize(12);
+      doc.text("AI Generated Summary:", 15, yOffset + 6);
+      const summaryLines = doc.splitTextToSize(chart.AIReport, 180);
+      doc.setFontSize(10);
 
-    autoTable(doc, {
-      startY: yOffset + 10,
-      head: [fields],
-      body,
-      styles: { fontSize: 8 },
-    });
+      if (yOffset + 14 + summaryLines.length * 5 > pageHeight - 20) {
+        doc.addPage();
+        yOffset = 20;
+        doc.setFontSize(12);
+        doc.text("AI Generated Summary:", 15, yOffset);
+        yOffset += 6;
+      } else {
+        yOffset += 14;
+      }
 
-    doc.save(`${fileData.fileName}-report.pdf`);
-    setGeneratingPDF(false);
-  };
-  
-  
+      doc.text(summaryLines, 15, yOffset);
+      yOffset += summaryLines.length * 5;
+    }
+
+    yOffset += 10;
+
+    // 🔼 Increment download count after adding each chart
+    try {
+      await incrementDownload({ chartId: chart.chartId, type: "pdf" });
+    } catch (err) {
+      console.error(
+        `Failed to increment PDF download for chart ${chart.chartId}:`,
+        err
+      );
+    }
+  }
+
+  // Add table of data
+  if (yOffset + 30 > pageHeight - 20) {
+    doc.addPage();
+    yOffset = 20;
+  }
+
+  const fieldsSet = new Set();
+  selectedCharts.forEach((chartId) => {
+    const chart = filteredCharts.find((c) => c.chartId === chartId);
+    if (chart?.config?.xAxis) fieldsSet.add(chart.config.xAxis);
+    if (chart?.config?.yAxis) fieldsSet.add(chart.config.yAxis);
+  });
+
+  const fields =
+    Array.from(fieldsSet).length > 0
+      ? Array.from(fieldsSet)
+      : Object.keys(fileData.rows[0] || {});
+
+  const body = fileData.rows.map((row) => fields.map((f) => row[f] ?? "—"));
+
+  autoTable(doc, {
+    startY: yOffset + 10,
+    head: [fields],
+    body,
+    styles: { fontSize: 8 },
+  });
+
+  doc.save(`${fileData.fileName}-report.pdf`);
+  setGeneratingPDF(false);
+  toast.success("PDF downloaded successfully!");
+};
 
   const handleDownloadImagesZip = async () => {
     setPreparationError("");
@@ -193,6 +202,7 @@ const ReportComponent = () => {
       const chart = filteredCharts.find((c) => c.chartId === chartId);
       const canvas = chartRefs.current[chartId]?.current;
       const dataUrl = canvas?.toDataURL("image/png");
+
       if (!dataUrl) {
         setGeneratingImg(false);
         return;
@@ -207,6 +217,14 @@ const ReportComponent = () => {
       link.download = fileName;
       link.click();
 
+      try {
+        await incrementDownload({ chartId: chart.chartId, type: "image" });
+        toast.success("Image downloaded");
+      } catch (error) {
+        console.error("Failed to increment image download count:", error);
+        toast.error("Failed to update image download count.");
+      }
+
       setGeneratingImg(false);
       return;
     }
@@ -219,6 +237,7 @@ const ReportComponent = () => {
       const chart = filteredCharts.find((c) => c.chartId === chartId);
       const canvas = chartRefs.current[chartId]?.current;
       const dataUrl = canvas?.toDataURL("image/png");
+
       if (!dataUrl) continue;
 
       const res = await fetch(dataUrl);
@@ -229,6 +248,15 @@ const ReportComponent = () => {
         .toLowerCase()}.png`;
 
       folder.file(fileName, blob);
+
+      try {
+        await incrementDownload({ chartId: chart.chartId, type: "image" });
+      } catch (error) {
+        console.error(
+          `Failed to increment download for ${chart.title}:`,
+          error
+        );
+      }
     }
 
     const content = await zip.generateAsync({ type: "blob" });
@@ -239,8 +267,9 @@ const ReportComponent = () => {
     link.click();
 
     setGeneratingImg(false);
+    toast.success("Images downloaded successfully!");
   };
-  
+
 
   if (!fileData) {
     return (
