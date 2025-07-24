@@ -13,7 +13,7 @@ const Home = () => {
             <h1 className="text-4xl font-bold">Welcome to</h1>
             <div className="flex items-center gap-2">
               <img
-                src="/LOGO2.png"
+                src="/logo2.png"
                 alt="ChartMate Logo"
                 className="h-10 w-auto"
               />

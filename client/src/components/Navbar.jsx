@@ -27,7 +27,7 @@ function Navbar() {
     <nav className="navbar bg-[var(--nav)] border-b-2 border-[var(--border)]">
       <div className="navbar-logo ">
         <NavLink to="/" onClick={handleNavClick}>
-          <img src="/LOGO2.png" alt="Logo" className="h-10" />
+          <img src="/logo2.png" alt="ChartMate" className="h-10" />
         </NavLink>
       </div>
 
