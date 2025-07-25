@@ -1,12 +1,21 @@
+// This is the recomposed ReportComponent using modular structure
+
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useOutletContext, useNavigate } from "react-router-dom";
 import { getSavedChart, incrementDownload } from "../services/AuthAPI";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import ChartCard from "./ChartUploads/ChartCard";
 import JSZip from "jszip";
-import ChartSummary from "./ChartSummary";
 import { toast } from "react-toastify";
+
+import ChartPreviewList from "./ReportParts/ChartPreviewList";
+import SavedChartsTable from "./ReportParts/SavedChartsTable";
+import DownloadButtons from "./ReportParts/DownloadButtons";
+import {
+  waitForCanvases,
+  renderChartToImageBlob,
+  blobToDataURL,
+} from "../utils/reportUtils";
 
 const ReportComponent = () => {
   const { filename } = useParams();
@@ -22,7 +31,6 @@ const ReportComponent = () => {
   const [preparationError, setPreparationError] = useState("");
 
   const chartRefs = useRef({});
-// console.log('this is reposcompinet pafe ', charts);
 
   useEffect(() => {
     const fetchCharts = async () => {
@@ -30,7 +38,6 @@ const ReportComponent = () => {
         const response = await getSavedChart();
         setCharts(response.data || []);
       } catch (err) {
-        // console.error("Error fetching charts:", err);
         setError("Failed to load charts.");
       } finally {
         setLoading(false);
@@ -42,234 +49,489 @@ const ReportComponent = () => {
   const filteredCharts = charts.filter(
     (chart) => chart.uploadedFile === fileData?._id
   );
+
   const refreshChartFromServer = async (chartId) => {
-  try {
-    const res = await getSavedChart();
-    const updatedChart = res.data.find((c) => c.chartId === chartId);
-
-    if (updatedChart) {
-      setCharts((prevCharts) =>
-        prevCharts.map((chart) =>
-          chart.chartId === chartId ? updatedChart : chart
-        )
-      );
-    }
-  } catch (err) {
-    console.error("Failed to refresh chart:", err);
-  }
-};
-
-
-  // Reusable canvas wait logic
-  const waitForCanvases = async (
-    selectedIds,
-    timeout = 5000,
-    interval = 200
-  ) => {
-    let waited = 0;
-    while (true) {
-      const allReady = selectedIds.every(
-        (id) => chartRefs.current[id]?.current
-      );
-      if (allReady) return true;
-      if (waited >= timeout) return false;
-      await new Promise((r) => setTimeout(r, interval));
-      waited += interval;
+    try {
+      const res = await getSavedChart();
+      const updatedChart = res.data.find((c) => c.chartId === chartId);
+      if (updatedChart) {
+        setCharts((prevCharts) =>
+          prevCharts.map((chart) =>
+            chart.chartId === chartId ? updatedChart : chart
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Failed to refresh chart:", err);
     }
   };
-const handleDownloadPDF = async () => {
-  setPreparationError("");
-  setGeneratingPDF(true);
 
-  const ready = await waitForCanvases(selectedCharts);
-  if (!ready) {
-    setGeneratingPDF(false);
-    setPreparationError(
-      "Some charts could not be prepared. Please wait a moment after selecting before downloading."
-    );
-    return;
-  }
-
-  const doc = new jsPDF();
-  doc.setFontSize(18);
-  doc.text(`Report: ${fileData.fileName}`, 14, 20);
-
-  let yOffset = 30;
-  const pageHeight = doc.internal.pageSize.getHeight();
-
-  for (const chartId of selectedCharts) {
-    const chart = filteredCharts.find((c) => c.chartId === chartId);
-    const canvas = chartRefs.current[chartId]?.current;
-    const dataUrl = canvas?.toDataURL("image/png");
-
-    if (!chart || !dataUrl) continue;
-
-    const estimatedHeight = 90 + (chart.AIReport ? 50 : 0);
-
-    if (yOffset + estimatedHeight > pageHeight - 20) {
-      doc.addPage();
-      yOffset = 20;
-    }
-
-    doc.setFontSize(14);
-    doc.text(chart.title || `Chart - ${chartId}`, 15, yOffset);
-    yOffset += 8;
-
-    doc.addImage(dataUrl, "PNG", 15, yOffset, 180, 80);
-    yOffset += 90;
-
-    if (chart.AIReport) {
-      doc.setFontSize(12);
-      doc.text("AI Generated Summary:", 15, yOffset + 6);
-      const summaryLines = doc.splitTextToSize(chart.AIReport, 180);
-      doc.setFontSize(10);
-
-      if (yOffset + 14 + summaryLines.length * 5 > pageHeight - 20) {
-        doc.addPage();
-        yOffset = 20;
-        doc.setFontSize(12);
-        doc.text("AI Generated Summary:", 15, yOffset);
-        yOffset += 6;
-      } else {
-        yOffset += 14;
-      }
-
-      doc.text(summaryLines, 15, yOffset);
-      yOffset += summaryLines.length * 5;
-    }
-
-    yOffset += 10;
-
-    // 🔼 Increment download count after adding each chart
-    try {
-      await incrementDownload({ chartId: chart.chartId, type: "pdf" });
-    } catch (err) {
-      console.error(
-        `Failed to increment PDF download for chart ${chart.chartId}:`,
-        err
-      );
-    }
-  }
-
-  // Add table of data
-  if (yOffset + 30 > pageHeight - 20) {
-    doc.addPage();
-    yOffset = 20;
-  }
-
-  const fieldsSet = new Set();
-  selectedCharts.forEach((chartId) => {
-    const chart = filteredCharts.find((c) => c.chartId === chartId);
-    if (chart?.config?.xAxis) fieldsSet.add(chart.config.xAxis);
-    if (chart?.config?.yAxis) fieldsSet.add(chart.config.yAxis);
-  });
-
-  const fields =
-    Array.from(fieldsSet).length > 0
-      ? Array.from(fieldsSet)
-      : Object.keys(fileData.rows[0] || {});
-
-  const body = fileData.rows.map((row) => fields.map((f) => row[f] ?? "—"));
-
-  autoTable(doc, {
-    startY: yOffset + 10,
-    head: [fields],
-    body,
-    styles: { fontSize: 8 },
-  });
-
-  doc.save(`${fileData.fileName}-report.pdf`);
-  setGeneratingPDF(false);
-  toast.success("PDF downloaded successfully!");
-};
-
-  const handleDownloadImagesZip = async () => {
+  const handleDownloadPDF = async () => {
     setPreparationError("");
-    setGeneratingImg(true);
+    setGeneratingPDF(true);
 
-    const ready = await waitForCanvases(selectedCharts);
+    const ready = await waitForCanvases(selectedCharts, chartRefs);
     if (!ready) {
-      setGeneratingImg(false);
+      setGeneratingPDF(false);
       setPreparationError(
         "Some charts could not be prepared. Please wait a moment after selecting before downloading."
       );
       return;
     }
 
-    // If only one chart is selected, download directly as .png
-    if (selectedCharts.length === 1) {
-      const chartId = selectedCharts[0];
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const marginX = 40;
+    const usableWidth = pageWidth - marginX * 2;
+
+    // Title + Timestamp
+    doc.setFontSize(18);
+    doc.setFont(undefined, "bold");
+    doc.text(`Report: ${fileData.fileName}`, marginX, 60);
+    doc.setFontSize(10);
+    doc.setFont(undefined, "normal");
+    doc.text(
+      `Generated: ${new Date().toLocaleString()}`,
+      pageWidth - marginX,
+      60,
+      { align: "right" }
+    );
+
+    let yOffset = 90;
+
+    for (let index = 0; index < selectedCharts.length; index++) {
+      const chartId = selectedCharts[index];
       const chart = filteredCharts.find((c) => c.chartId === chartId);
-      const canvas = chartRefs.current[chartId]?.current;
-      const dataUrl = canvas?.toDataURL("image/png");
+      if (!chart) continue;
 
-      if (!dataUrl) {
-        setGeneratingImg(false);
-        return;
+      const blob = await renderChartToImageBlob(chart, index);
+      if (!blob) continue;
+
+      const dataUrl = await blobToDataURL(blob);
+
+      // Chart Title
+      doc.setFontSize(14);
+      doc.setFont(undefined, "bold");
+      doc.text(chart.title || `Chart - ${chartId}`, marginX, yOffset);
+      yOffset += 20;
+      doc.setFont(undefined, "normal");
+
+      // Chart Image
+      const imageWidth = 500;
+      const imageHeight = 280;
+      const imageX = (pageWidth - imageWidth) / 2;
+
+      if (yOffset + imageHeight + 20 > pageHeight - 40) {
+        doc.addPage();
+        yOffset = 60;
       }
 
-      const fileName = `${(chart.title || "chart")
-        .replace(/\s+/g, "_")
-        .toLowerCase()}.png`;
+      doc.addImage(dataUrl, "PNG", imageX, yOffset, imageWidth, imageHeight);
+      yOffset += imageHeight + 20;
 
-      const link = document.createElement("a");
-      link.href = dataUrl;
-      link.download = fileName;
-      link.click();
+      // Pie/Doughnut Table Breakdown
+      if (chart.chartType === "pie" || chart.chartType === "doughnut") {
+        const labels = chart.config?.labels || [];
+        const values = chart.config?.data || [];
+        const total = values.reduce((sum, val) => sum + Number(val), 0);
 
+        const breakdown = labels.map((label, i) => [
+          label,
+          values[i],
+          `${((values[i] / total) * 100).toFixed(1)}%`,
+        ]);
+
+        doc.setFontSize(12);
+        doc.setFont(undefined, "bold");
+        doc.text("Percentage Breakdown:", marginX, yOffset);
+        yOffset += 10;
+
+        doc.setFont(undefined, "normal");
+        autoTable(doc, {
+          startY: yOffset,
+          head: [["Label", "Value", "%"]],
+          body: breakdown,
+          styles: { fontSize: 9 },
+          margin: { left: marginX, right: marginX },
+        });
+
+        yOffset = doc.lastAutoTable.finalY + 20;
+      }
+
+      // AI Summary
+      if (chart.AIReport) {
+        const summaryTitle = "AI Generated Summary:";
+        const summaryParagraphs = chart.AIReport.split(/\n\s*\n/);
+
+        if (yOffset + 100 > pageHeight - 40) {
+          doc.addPage();
+          yOffset = 60;
+        }
+
+        doc.setFontSize(12);
+        doc.setFont(undefined, "bold");
+        doc.text(summaryTitle, marginX, yOffset);
+        yOffset += 20;
+
+        doc.setFontSize(10);
+        doc.setFont(undefined, "normal");
+
+        for (let para of summaryParagraphs) {
+          const lines = doc.splitTextToSize(para.trim(), usableWidth);
+          for (let line of lines) {
+            if (yOffset > pageHeight - 40) {
+              doc.addPage();
+              yOffset = 60;
+            }
+            doc.text(line, marginX, yOffset);
+            yOffset += 14;
+          }
+          yOffset += 10; // space between paragraphs
+        }
+      }
+
+      // Track download
       try {
-        await incrementDownload({ chartId: chart.chartId, type: "image" });
-        toast.success("Image downloaded");
-      } catch (error) {
-        console.error("Failed to increment image download count:", error);
-        toast.error("Failed to update image download count.");
+        await incrementDownload({ chartId: chart.chartId, type: "pdf" });
+      } catch (err) {
+        console.error(
+          `Failed to increment PDF download for chart ${chart.chartId}:`,
+          err
+        );
       }
 
+      if (
+        yOffset + 200 > pageHeight - 40 &&
+        index < selectedCharts.length - 1
+      ) {
+        doc.addPage();
+        yOffset = 60;
+      }
+    }
+
+    // Final Data Table
+    if (fileData?.rows?.length) {
+      const fieldsSet = new Set();
+      selectedCharts.forEach((chartId) => {
+        const chart = filteredCharts.find((c) => c.chartId === chartId);
+        if (chart?.config?.xAxis) fieldsSet.add(chart.config.xAxis);
+        if (chart?.config?.yAxis) {
+          const yAxes = Array.isArray(chart.config.yAxis)
+            ? chart.config.yAxis
+            : [chart.config.yAxis];
+          yAxes.forEach((axis) => fieldsSet.add(axis));
+        }
+      });
+
+      const fields =
+        fieldsSet.size > 0
+          ? Array.from(fieldsSet)
+          : Object.keys(fileData.rows[0] || {});
+      const body = fileData.rows.map((row) => fields.map((f) => row[f] ?? "—"));
+
+      if (yOffset + 100 > pageHeight - 40) {
+        doc.addPage();
+        yOffset = 60;
+      }
+
+      doc.setFont(undefined, "bold");
+      doc.setFontSize(12);
+      doc.text("Source Data Table:", marginX, yOffset);
+      yOffset += 10;
+      doc.setFont(undefined, "normal");
+
+      autoTable(doc, {
+        startY: yOffset,
+        head: [fields],
+        body,
+        styles: { fontSize: 8 },
+        margin: { left: marginX, right: marginX },
+        headStyles: { fillColor: [41, 128, 185] },
+      });
+    } else {
+      doc.setFontSize(10);
+      doc.text("No data available to display.", marginX, yOffset);
+    }
+
+    // Page numbers
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(9);
+      doc.text(
+        `Page ${i} of ${pageCount}`,
+        pageWidth - marginX,
+        pageHeight - 20,
+        { align: "right" }
+      );
+    }
+
+    doc.save(`${fileData.fileName?.replace(/\s+/g, "_") || "report"}.pdf`);
+    setGeneratingPDF(false);
+    toast.success("PDF downloaded successfully!");
+  };
+
+
+// const handleDownloadPDF = async () => {
+//   setPreparationError("");
+//   setGeneratingPDF(true);
+
+//   const ready = await waitForCanvases(selectedCharts, chartRefs);
+//   if (!ready) {
+//     setGeneratingPDF(false);
+//     setPreparationError(
+//       "Some charts could not be prepared. Please wait a moment after selecting before downloading."
+//     );
+//     return;
+//   }
+
+//   const doc = new jsPDF({ unit: "pt", format: "a4" });
+//   const pageWidth = doc.internal.pageSize.getWidth();
+//   const pageHeight = doc.internal.pageSize.getHeight();
+//   const marginX = 40;
+//   const usableWidth = pageWidth - marginX * 2;
+
+//   // Title + Timestamp
+//   doc.setFontSize(18);
+//   doc.text(`Report: ${fileData.fileName}`, marginX, 60);
+//   doc.setFontSize(10);
+//   doc.text(
+//     `Generated: ${new Date().toLocaleString()}`,
+//     pageWidth - marginX,
+//     60,
+//     { align: "right" }
+//   );
+
+//   let yOffset = 90;
+
+//   for (let index = 0; index < selectedCharts.length; index++) {
+//     const chartId = selectedCharts[index];
+//     const chart = filteredCharts.find((c) => c.chartId === chartId);
+//     if (!chart) continue;
+
+//     const blob = await renderChartToImageBlob(chart, index);
+//     if (!blob) continue;
+
+//     const dataUrl = await blobToDataURL(blob);
+
+//     // Title
+//     doc.setFontSize(14);
+//     doc.text(chart.title || `Chart - ${chartId}`, marginX, yOffset);
+//     yOffset += 20;
+
+//     // Chart image
+//     const imageWidth = 500;
+//     const imageHeight = 280;
+//     const imageX = (pageWidth - imageWidth) / 2;
+
+//     if (yOffset + imageHeight + 20 > pageHeight - 40) {
+//       doc.addPage();
+//       yOffset = 60;
+//     }
+
+//     doc.addImage(dataUrl, "PNG", imageX, yOffset, imageWidth, imageHeight);
+//     yOffset += imageHeight + 20;
+
+//     // Pie/Doughnut Breakdown
+//     if (chart.chartType === "pie" || chart.chartType === "doughnut") {
+//       const labels = chart.config?.labels || [];
+//       const values = chart.config?.data || [];
+//       const total = values.reduce((sum, val) => sum + Number(val), 0);
+
+//       const breakdown = labels.map((label, i) => [
+//         label,
+//         values[i],
+//         `${((values[i] / total) * 100).toFixed(1)}%`,
+//       ]);
+
+//       doc.setFontSize(12);
+//       doc.text("Percentage Breakdown:", marginX, yOffset);
+//       yOffset += 10;
+
+//       autoTable(doc, {
+//         startY: yOffset,
+//         head: [["Label", "Value", "%"]],
+//         body: breakdown,
+//         styles: { fontSize: 9 },
+//         margin: { left: marginX, right: marginX },
+//       });
+
+//       yOffset = doc.lastAutoTable.finalY + 20;
+//     }
+
+//     // AI Summary
+//     if (chart.AIReport) {
+//       const summaryLines = doc.splitTextToSize(chart.AIReport, usableWidth);
+
+//       if (yOffset + summaryLines.length * 14 > pageHeight - 40) {
+//         doc.addPage();
+//         yOffset = 60;
+//       }
+
+//       doc.setFontSize(12);
+//       doc.text("AI Generated Summary:", marginX, yOffset);
+//       yOffset += 20;
+
+//       doc.setFontSize(10);
+//       doc.text(summaryLines, marginX, yOffset);
+//       yOffset += summaryLines.length * 14 + 20;
+//     }
+
+//     // Track chart download
+//     try {
+//       await incrementDownload({ chartId: chart.chartId, type: "pdf" });
+//     } catch (err) {
+//       console.error(
+//         `Failed to increment PDF download for chart ${chart.chartId}:`,
+//         err
+//       );
+//     }
+
+//     // Page break if nearing bottom
+//     if (yOffset + 200 > pageHeight - 40 && index < selectedCharts.length - 1) {
+//       doc.addPage();
+//       yOffset = 60;
+//     }
+//   }
+
+//   // === Final Data Table (from fileData) ===
+//   if (fileData?.rows?.length) {
+//     const fieldsSet = new Set();
+
+//     selectedCharts.forEach((chartId) => {
+//       const chart = filteredCharts.find((c) => c.chartId === chartId);
+//       if (chart?.config?.xAxis) fieldsSet.add(chart.config.xAxis);
+//       if (chart?.config?.yAxis) {
+//         const yAxes = Array.isArray(chart.config.yAxis)
+//           ? chart.config.yAxis
+//           : [chart.config.yAxis];
+//         yAxes.forEach((axis) => fieldsSet.add(axis));
+//       }
+//     });
+
+//     const fields =
+//       fieldsSet.size > 0
+//         ? Array.from(fieldsSet)
+//         : Object.keys(fileData.rows[0] || {});
+//     const body = fileData.rows.map((row) => fields.map((f) => row[f] ?? "—"));
+
+//     if (yOffset + 100 > pageHeight - 40) {
+//       doc.addPage();
+//       yOffset = 60;
+//     }
+
+//     autoTable(doc, {
+//       startY: yOffset,
+//       head: [fields],
+//       body,
+//       styles: { fontSize: 8 },
+//       margin: { left: marginX, right: marginX },
+//       headStyles: { fillColor: [41, 128, 185] },
+//     });
+//   } else {
+//     doc.setFontSize(10);
+//     doc.text("No data available to display.", marginX, yOffset);
+//   }
+
+//   // Optional: Add page numbers
+//   const pageCount = doc.internal.getNumberOfPages();
+//   for (let i = 1; i <= pageCount; i++) {
+//     doc.setPage(i);
+//     doc.setFontSize(9);
+//     doc.text(
+//       `Page ${i} of ${pageCount}`,
+//       pageWidth - marginX,
+//       pageHeight - 20,
+//       { align: "right" }
+//     );
+//   }
+
+//   doc.save(`${fileData.fileName?.replace(/\s+/g, "_") || "report"}.pdf`);
+//   setGeneratingPDF(false);
+//   toast.success("PDF downloaded successfully!");
+// };
+
+
+const handleDownloadImagesZip = async () => {
+  setPreparationError("");
+  setGeneratingImg(true);
+
+  const ready = await waitForCanvases(selectedCharts, chartRefs);
+  if (!ready) {
+    setGeneratingImg(false);
+    setPreparationError(
+      "Some charts could not be prepared. Please wait a moment after selecting before downloading."
+    );
+    return;
+  }
+
+  if (selectedCharts.length === 1) {
+    const chartId = selectedCharts[0];
+    const chart = filteredCharts.find((c) => c.chartId === chartId);
+
+    if (!chart) {
       setGeneratingImg(false);
+      toast.error("Chart not found.");
       return;
     }
 
-    // If multiple charts selected, prepare ZIP
-    const zip = new JSZip();
-    const folder = zip.folder("charts");
-
-    for (const [index, chartId] of selectedCharts.entries()) {
-      const chart = filteredCharts.find((c) => c.chartId === chartId);
-      const canvas = chartRefs.current[chartId]?.current;
-      const dataUrl = canvas?.toDataURL("image/png");
-
-      if (!dataUrl) continue;
-
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
-
-      const fileName = `${index + 1}_${(chart.title || "chart")
-        .replace(/\s+/g, "_")
-        .toLowerCase()}.png`;
-
-      folder.file(fileName, blob);
-
-      try {
-        await incrementDownload({ chartId: chart.chartId, type: "image" });
-      } catch (error) {
-        console.error(
-          `Failed to increment download for ${chart.title}:`,
-          error
-        );
-      }
-    }
-
-    const content = await zip.generateAsync({ type: "blob" });
+    const blob = await renderChartToImageBlob(chart, 0);
+    const fileName = `${(chart.title || "chart")
+      .replace(/\s+/g, "_")
+      .toLowerCase()}.png`;
 
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(content);
-    link.download = `${fileData.fileName}-charts.zip`;
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
     link.click();
 
-    setGeneratingImg(false);
-    toast.success("Images downloaded successfully!");
-  };
+    try {
+      await incrementDownload({ chartId: chart.chartId, type: "image" });
+      toast.success("Image downloaded");
+    } catch (error) {
+      console.error("Failed to update download count:", error);
+      toast.error("Download count update failed.");
+    }
 
+    setGeneratingImg(false);
+    return;
+  }
+
+  // Multiple chart download – ZIP creation
+  const zip = new JSZip();
+  const folder = zip.folder("charts");
+
+  for (const [index, chartId] of selectedCharts.entries()) {
+    const chart = filteredCharts.find((c) => c.chartId === chartId);
+    if (!chart) continue;
+
+    const blob = await renderChartToImageBlob(chart, index);
+    if (!blob) continue;
+
+    const fileName = `${index + 1}_${(chart.title || "chart")
+      .replace(/\s+/g, "_")
+      .toLowerCase()}.png`;
+
+    folder.file(fileName, blob);
+
+    try {
+      await incrementDownload({ chartId: chart.chartId, type: "image" });
+    } catch (error) {
+      console.error(`Download count update failed for ${chart.title}:`, error);
+    }
+  }
+
+  const content = await zip.generateAsync({ type: "blob" });
+
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(content);
+  link.download = `${fileData.fileName}-charts.zip`;
+  link.click();
+
+  setGeneratingImg(false);
+  toast.success("All chart images downloaded as ZIP!");
+};
 
   if (!fileData) {
     return (
@@ -306,149 +568,34 @@ const handleDownloadPDF = async () => {
 
       <div className="mb-4">
         <h3 className="text-xl font-semibold mb-2">Chart Previews</h3>
-        {selectedCharts.length === 0 ? (
-          <p className="text-gray-500">No charts selected.</p>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {selectedCharts.map((chartId) => {
-              const chart = filteredCharts.find((c) => c.chartId === chartId);
-              if (!chart) return null;
-              if (!chartRefs.current[chartId]) {
-                chartRefs.current[chartId] = React.createRef();
-              }
-              return (
-                <div
-                  key={chartId}
-                  className="relative border border-[var(--border)] rounded p-2"
-                >
-                  <button
-                    onClick={() =>
-                      setSelectedCharts((prev) =>
-                        prev.filter((id) => id !== chartId)
-                      )
-                    }
-                    className="absolute top-2 z-10 right-2 text-red-500 hover:text-red-700"
-                    title="Remove chart"
-                  >
-                    ❌
-                  </button>
-
-                  <ChartCard
-                    chart={chart}
-                    index={chartId}
-                    rows={fileData.rows}
-                    readOnly
-                    canvasRef={chartRefs.current[chartId]}
-                  />
-                  <ChartSummary
-                    chart={chart}
-                    onSummarySaved={() => refreshChartFromServer(chart.chartId)}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <ChartPreviewList
+          selectedCharts={selectedCharts}
+          filteredCharts={filteredCharts}
+          chartRefs={chartRefs}
+          fileData={fileData}
+          setSelectedCharts={setSelectedCharts}
+          refreshChartFromServer={refreshChartFromServer}
+        />
       </div>
 
       <div>
         <h3 className="text-xl font-semibold mb-2">Saved Charts</h3>
-        {loading ? (
-          <p>Loading saved charts...</p>
-        ) : error ? (
-          <p className="text-red-600">{error}</p>
-        ) : (
-          <>
-            <button
-              className="mb-2 text-sm text-blue-600 underline"
-              onClick={() => {
-                if (selectedCharts.length === filteredCharts.length) {
-                  setSelectedCharts([]);
-                } else {
-                  setSelectedCharts(filteredCharts.map((c) => c.chartId));
-                }
-              }}
-            >
-              {selectedCharts.length === filteredCharts.length
-                ? "Deselect All"
-                : "Select All"}
-            </button>
-
-            <div className="overflow-x-auto">
-              <table className="min-w-full table-auto border text-sm">
-                <thead className="bg-[var(--border)]">
-                  <tr>
-                    <th className="px-4 py-2 border">Select</th>
-                    <th className="px-4 py-2 border">Chart Title</th>
-                    <th className="px-4 py-2 border">Type</th>
-                    <th className="px-4 py-2 border">X Axis</th>
-                    <th className="px-4 py-2 border">Y Axis</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCharts.map((chart) => (
-                    <tr
-                      key={chart.chartId}
-                      className="hover:bg-[var(--border)]"
-                    >
-                      <td className="px-4 py-2 border text-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedCharts.includes(chart.chartId)}
-                          onChange={(e) => {
-                            const newSelection = e.target.checked
-                              ? [...selectedCharts, chart.chartId]
-                              : selectedCharts.filter(
-                                  (id) => id !== chart.chartId
-                                );
-                            setSelectedCharts(newSelection);
-                            setPreparationError("");
-                          }}
-                        />
-                      </td>
-                      <td className="px-4 py-2 border">{chart.title}</td>
-                      <td className="px-4 py-2 border">{chart.type}</td>
-                      <td className="px-4 py-2 border">
-                        {chart.config?.xAxis || "—"}
-                      </td>
-                      <td className="px-4 py-2 border">
-                        {chart.config?.yAxis || "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
+        <SavedChartsTable
+          filteredCharts={filteredCharts}
+          selectedCharts={selectedCharts}
+          setSelectedCharts={setSelectedCharts}
+          loading={loading}
+          error={error}
+        />
       </div>
 
       {selectedCharts.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-4">
-          <button
-            onClick={handleDownloadPDF}
-            disabled={generatingPDF}
-            className={`px-4 py-2 rounded ${
-              generatingPDF
-                ? "bg-gray-400 text-white cursor-not-allowed"
-                : "bg-green-600 hover:bg-green-500 text-white"
-            }`}
-          >
-            {generatingPDF ? "Generating PDF..." : "Download PDF Report"}
-          </button>
-
-          <button
-            onClick={handleDownloadImagesZip}
-            disabled={generatingImg}
-            className={`px-4 py-2 rounded ${
-              generatingImg
-                ? "bg-gray-400 text-white cursor-not-allowed"
-                : "bg-purple-600 hover:bg-purple-500 text-white"
-            }`}
-          >
-            {generatingImg ? "Preparing ZIP..." : "Download Images ZIP"}
-          </button>
-        </div>
+        <DownloadButtons
+          handleDownloadPDF={handleDownloadPDF}
+          handleDownloadImagesZip={handleDownloadImagesZip}
+          generatingPDF={generatingPDF}
+          generatingImg={generatingImg}
+        />
       )}
     </div>
   );

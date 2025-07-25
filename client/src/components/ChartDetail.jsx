@@ -1,11 +1,19 @@
+// ChartDetail.jsx
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { toast } from "react-toastify";
 import ChartDetailMain from "../components/ChartDetail/ChartDetailMain";
 import ChartDetailInfo from "../components/ChartDetail/ChartDetailInfo";
 import { getSavedChart, incrementDownload } from "../services/AuthAPI";
+import {
+  waitForCanvases,
+  renderChartToImageBlob,
+  blobToDataURL,
+  downloadSingleChartPDF,
+} from "../utils/reportUtils";
+
 
 const ChartDetail = () => {
   const { chartId } = useParams();
@@ -31,7 +39,6 @@ const ChartDetail = () => {
         setChart(found);
         setTimeout(() => setReady(true), 500);
       } catch (err) {
-        // console.error("Failed to fetch chart:", err);
         alert("Error loading chart.");
         navigate("/upload");
       } finally {
@@ -51,73 +58,32 @@ const ChartDetail = () => {
     }
   };
 
- const handleDownloadImage = async () => {
-   if (!ready || !canvasRef.current) {
-     alert("Chart is not rendered yet.");
-     return;
-   }
+  const handleDownloadImage = async () => {
+    if (!ready || !chart) {
+      alert("Chart is not rendered yet.");
+      return;
+    }
+    const blob = await renderChartToImageBlob(chart, 0);
+    const url = await blobToDataURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${chart.title?.replace(/\s+/g, "_") || "chart"}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
-   const dataUrl = canvasRef.current.toDataURL("image/png");
-   const link = document.createElement("a");
-   link.href = dataUrl;
-   link.download = `${chart.title || "chart"}.png`;
-   link.click();
 
-   try {
-     await incrementDownload({ chartId: chart.chartId , type:"image" });
-     toast.success("Image downloaded");
-   } catch (error) {
-     console.error("Failed to increment image download count:", error);
-     toast.error("Failed to update image download count.");
-   }
- };
+// import { , renderChartToImageBlob } from "./yourUtilityFile"; // Adjust import path
 
- const handleDownloadPDF = async () => {
-   if (!ready || !canvasRef.current) {
-     alert("Chart is not rendered yet.");
-     return;
-   }
+const handleDownloadPDF = async () => {
+  if (!chart) {
+    alert("Chart is not available.");
+    return;
+  }
+  await downloadSingleChartPDF(chart);
+};
 
-   const doc = new jsPDF();
-   doc.setFontSize(18);
-   doc.text(`Report for: ${chart.title}`, 14, 20);
-
-   const dataUrl = canvasRef.current.toDataURL("image/png");
-   let yOffset = 30;
-   if (dataUrl) {
-     doc.addImage(dataUrl, "PNG", 15, yOffset, 180, 80);
-     yOffset += 90;
-   }
-
-   if (chart.AIReport) {
-     doc.setFontSize(14);
-     doc.text("AI Generated Summary:", 14, yOffset + 10);
-     doc.setFontSize(11);
-     const summaryLines = doc.splitTextToSize(chart.AIReport, 180);
-     doc.text(summaryLines, 14, yOffset + 20);
-     yOffset += 20 + summaryLines.length * 6;
-   }
-
-   const fields = chart.config?.fields || Object.keys(chart.data?.[0] || {});
-   const body = chart.data.map((row) => fields.map((f) => row[f] ?? "—"));
-
-   autoTable(doc, {
-     startY: yOffset + 10,
-     head: [fields],
-     body,
-     styles: { fontSize: 8 },
-   });
-
-   doc.save(`${chart.title || "chart"}-report.pdf`);
-
-   try {
-     await incrementDownload({ chartId: chart.chartId, type: "pdf" });
-     toast.success("PDF downloaded");
-   } catch (err) {
-     console.error("Failed to increment PDF download count:", err);
-     toast.error("Failed to update PDF download count.");
-   }
- };
 
 
   if (loading) {
