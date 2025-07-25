@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useRef } from "react";
 import { Bar, Line, Pie, Doughnut, Scatter } from "react-chartjs-2";
+import ChartDataLabels from "chartjs-plugin-datalabels";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -24,7 +25,8 @@ ChartJS.register(
   ArcElement,
   Tooltip,
   Legend,
-  ScatterController 
+  ScatterController,
+  ChartDataLabels
 );
 
 const generateColors = (count, alpha = 1) => {
@@ -70,7 +72,6 @@ const ChartRenderer = forwardRef(({ type, xAxis, yAxis, data }, canvasRef) => {
   const labels = shouldRenderDemo ? demoLabels : data.map((row) => row[xAxis]);
 
   let datasets;
-
   if (shouldRenderDemo) {
     datasets = [
       {
@@ -105,7 +106,7 @@ const ChartRenderer = forwardRef(({ type, xAxis, yAxis, data }, canvasRef) => {
       backgroundColor:
         type === "pie" || type === "doughnut"
           ? generateColors(data.length)
-          : generateColors(yKeys.length, type === "area" ? 0.6 : 1)[i], // alpha 0.6 for area
+          : generateColors(yKeys.length, type === "area" ? 0.6 : 1)[i],
       borderColor:
         type === "pie" || type === "doughnut"
           ? generateColors(data.length)
@@ -129,7 +130,7 @@ const ChartRenderer = forwardRef(({ type, xAxis, yAxis, data }, canvasRef) => {
     plugins: {
       legend: { display: true, position: "top" },
       tooltip: {
-        enabled: true,
+        enabled: type !== "pie" && type !== "doughnut",
         callbacks:
           type === "scatter"
             ? {
@@ -137,6 +138,19 @@ const ChartRenderer = forwardRef(({ type, xAxis, yAxis, data }, canvasRef) => {
               }
             : {},
       },
+      datalabels:
+        type === "pie" || type === "doughnut"
+          ? {
+              color: "#fff",
+              font: { weight: "bold", size: 14 },
+              formatter: (value, context) => {
+                const dataset = context.chart.data.datasets[0].data;
+                const total = dataset.reduce((sum, val) => sum + val, 0);
+                const percent = ((value / total) * 100).toFixed(1);
+                return `${percent}%`;
+              },
+            }
+          : { display: false },
     },
     scales:
       type === "pie" || type === "doughnut"
@@ -186,6 +200,7 @@ const ChartRenderer = forwardRef(({ type, xAxis, yAxis, data }, canvasRef) => {
         ref={chartInstanceRef}
         data={chartData}
         options={options}
+        // plugins={showDataLabels ? [ChartDataLabels] : []}
       />
     </div>
   );
