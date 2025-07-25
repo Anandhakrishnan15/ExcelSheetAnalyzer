@@ -24,6 +24,12 @@ export const registerUser = (data) => API.post("/Auth/register", data);
 export const loginUser = (data) => API.post("/Auth/login", data);
 export const getMe = () => API.get("/api/users/me");
 
+// Forgot Password Flow
+export const sendOTP = (email) => API.post("/Auth/forgot-password", { email });
+export const verifyOTP = (email, otp) => API.post("/Auth/verify-otp", { email, otp });
+export const resetPassword = ({ email, otp, newPassword }) =>
+  API.post("/Auth/reset-password", { email, otp, newPassword });
+
 //
 // ========== FILE UPLOAD ==========
 //
