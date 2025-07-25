@@ -3,58 +3,74 @@ const fs = require("fs");
 const path = require("path");
 
 exports.uploadFile = async (req, res) => {
-    try {
-        const { fileName, rows } = req.body;
+  try {
+    const { fileName, rows } = req.body;
 
-        if (!fileName || !rows) {
-            return res.status(400).json({
-                message: "fileName and rows are required.",
-            });
-        }
-
-        const parsedRows = JSON.parse(rows);
-        if (!Array.isArray(parsedRows) || parsedRows.length === 0) {
-            return res.status(400).json({
-                message: "rows must be a non-empty array.",
-            });
-        }
-
-        const file = req.file;
-
-        const newUpload = {
-            fileName,
-            rows: parsedRows,
-            filePath: file ? file.path : null,
-            originalName: file ? file.originalname : null,
-            mimeType: file ? file.mimetype : null,
-            size: file ? file.size : null,
-            createdAt: new Date(),
-        };
-
-        // Check if the user already has a document
-        let userUploads = await UploadedFileSchema.findOne({ user: req.user._id });
-
-        if (userUploads) {
-            // Push the new file into the array
-            userUploads.uploadedFiles.unshift(newUpload);
-            await userUploads.save();
-        } else {
-            // Create a new document
-            userUploads = await UploadedFileSchema.create({
-                user: req.user._id,
-                uploadedFiles: [newUpload],
-            });
-        }
-
-        res.status(201).json({
-            message: "File uploaded successfully.",
-            data: newUpload,
-        });
-    } catch (err) {
-        console.error("Upload error:", err);
-        res.status(500).json({ message: "Server error." });
+    // 1. Validate inputs
+    if (!fileName || !rows) {
+      return res.status(400).json({
+        message: "fileName and rows are required.",
+      });
     }
+
+    // 2. Parse and validate rows
+    let parsedRows;
+    try {
+      parsedRows = JSON.parse(rows);
+    } catch (e) {
+      return res.status(400).json({
+        message: "Invalid JSON in rows.",
+      });
+    }
+
+    if (!Array.isArray(parsedRows) || parsedRows.length === 0) {
+      return res.status(400).json({
+        message: "rows must be a non-empty array.",
+      });
+    }
+
+    // 3. Ensure user is authenticated
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: "Unauthorized. User not found." });
+    }
+
+    const file = req.file;
+
+    // 4. Construct upload metadata
+    const newUpload = {
+      fileName,
+      rows: parsedRows,
+      filePath: null, // ⛔️ no file path (in-memory only)
+      originalName: file?.originalname || null,
+      mimeType: file?.mimetype || null,
+      size: file?.size || null,
+      createdAt: new Date(),
+    };
+
+    // 5. Save upload to user's document
+    let userUploads = await UploadedFileSchema.findOne({ user: req.user._id });
+
+    if (userUploads) {
+      userUploads.uploadedFiles.unshift(newUpload);
+      await userUploads.save();
+    } else {
+      userUploads = await UploadedFileSchema.create({
+        user: req.user._id,
+        uploadedFiles: [newUpload],
+      });
+    }
+
+    // 6. Success response
+    res.status(201).json({
+      message: "File uploaded successfully.",
+      data: newUpload,
+    });
+  } catch (err) {
+    console.error("Upload error:", err.message, err.stack);
+    res.status(500).json({ message: "Server error." });
+  }
 };
+
 
 
 exports.getUploadFiles = async (req, res) => {
