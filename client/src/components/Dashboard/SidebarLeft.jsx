@@ -1,10 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-// import { useDashboard } from "../../context/DashboardContext";
+import { useNavigate } from "react-router-dom";
 import { AllAdminOnly } from "../../services/AuthAPI";
+// Optional: If using toast notifications
+import { toast } from "react-toastify";
 
 const SidebarLeft = ({ showLeft, setShowLeft }) => {
   const leftRef = useRef();
   const [adminUsers, setAdminUsers] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAdmins = async () => {
@@ -71,7 +74,11 @@ const SidebarLeft = ({ showLeft, setShowLeft }) => {
               <div className="flex items-center justify-between">
                 <p className="font-medium">{user.name}</p>
                 <button
-                  onClick={() => console.log("This is the admin ID", user._id)}
+                  onClick={() =>
+                    navigate(`/admin/user/${user._id}`, {
+                      state: { user },
+                    })
+                  }
                   className={`text-xs px-2 py-0.5 rounded-2xl font-semibold ${
                     user.blocked
                       ? "bg-yellow-100 text-yellow-700"
@@ -86,7 +93,10 @@ const SidebarLeft = ({ showLeft, setShowLeft }) => {
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(user._id);
-                    console.log("Copied user ID", user._id);
+                    // ✅ Success feedback
+                    toast.success("User ID copied to clipboard!");
+                    // console.log("Copied user ID:", user._id);
+                    // Or use alert: alert("Copied to clipboard");
                   }}
                   className="text-gray-400 hover:text-white transition-colors text-xs cursor-pointer"
                 >

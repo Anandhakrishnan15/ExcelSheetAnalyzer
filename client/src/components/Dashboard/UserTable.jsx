@@ -59,7 +59,7 @@ const fetchUsers = useCallback(async () => {
       setLoading(true);
       const res = await searchUsers(q);
       const searchedUsers = res?.users || [];
-      console.log(searchedUsers);
+      // console.log(searchedUsers);
       
       setUsers(searchedUsers);
       setHasMore(false);
