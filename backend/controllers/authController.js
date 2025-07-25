@@ -1,60 +1,132 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 const User = require('../models/User');
 
-const generateToken = (user) => {//generateToken with the user  promt given in from the register and login 
-    const token = jwt.sign(
-        { id: user._id, email: user.email, role: user.role },
+// 🔐 Generate JWT Token
+const generateToken = (user) => {
+    return jwt.sign(
+        {
+            id: user._id,
+            email: user.email,
+            role: user.role,
+        },
         process.env.JWT_KEY,
-        { expiresIn: '24h' } //expire in 24 h
+        { expiresIn: '24h' }
     );
-
-    return token;
 };
 
+// 📝 Register User
 exports.registerUser = async (req, res) => {
-    const { name, email, password, role } = req.body;// get the info from the body
+    const { name, email, password, role } = req.body;
 
     try {
-        const existing = await User.findOne({ email });// check the existing the email or not is not send err res
-        if (existing) return res.status(400).json({ message: 'User already exists' });
+        const existing = await User.findOne({ email });
+        if (existing) return res.status(409).json({ message: 'User already exists' });
 
-        const hashedPassword = await bcrypt.hash(password, 10); // if the user is new then hash the pWD
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        const user = await User.create({//creat the colletion in the user 
+        const user = await User.create({
             name,
             email,
             password: hashedPassword,
             role: role || 'user',
         });
 
-        const token = generateToken(user); // generate the token
-        res.status(201).json({ token }); //send the token to the frontend
+        const token = generateToken(user);
+        return res.status(201).json({ token });
     } catch (error) {
-        // console.error(`Registration error:`, error.message);
-        res.status(500).json({ message: 'Registration error' });
+        return res.status(500).json({ message: 'Registration error', error: error.message });
     }
 };
 
-
+// 🔐 Login User
 exports.loginUser = async (req, res) => {
-    const { email, password } = req.body; // get the email and the password from  the  body
-    // if(!email )
+    const { email, password } = req.body;
 
     try {
-        const user = await User.findOne({ email }); // look for the email in teh user collection in DB
-        if (!user) return res.status(401).json({ message: 'Invalid email or password' });// if not  there return invalid email or password
+        const user = await User.findOne({ email });
+        if (!user) return res.status(401).json({ message: 'Invalid email or password' });
 
-        const isMatch = await bcrypt.compare(password, user.password); // cheking the given pwd is same as the bcrpt pwd from teh user colletion
-        if (!isMatch) return res.status(401).json({ message: 'Invalid email or password' });//if not  there return invalid email or password
-        if (user.blocked) return res.status(401).json({ message: " You'r ACC is Blocked" });
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(401).json({ message: 'Invalid email or password' });
 
-        const token = generateToken(user); //generat the token
+        if (user.blocked) return res.status(403).json({ message: 'Your account is blocked' });
 
-        res.status(200).json({ token }); //give token to store in the localstoreage
+        const token = generateToken(user);
+        return res.status(200).json({ token });
     } catch (error) {
-        // console.error(`Login error:`, error.message);
-        res.status(500).json({ message: 'Login error' });
+        return res.status(500).json({ message: 'Login error', error: error.message });
     }
 };
 
+// 📩 Send OTP to Email
+exports.sendOTP = async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+        user.resetOTP = otp;
+        user.otpExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes from now
+        await user.save();
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
+            },
+        });
+
+        await transporter.sendMail({
+            to: email,
+            subject: 'Password Reset OTP',
+            text: `Your OTP to reset your password is: ${otp}`,
+        });
+
+        return res.status(200).json({ message: 'OTP sent to your email' });
+    } catch (error) {
+        return res.status(500).json({ message: 'Failed to send OTP', error: error.message });
+    }
+};
+
+// ✅ Verify OTP
+exports.verifyOTP = async (req, res) => {
+    const { email, otp } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user || user.resetOTP !== otp || user.otpExpiry < Date.now()) {
+            return res.status(400).json({ message: 'Invalid or expired OTP' });
+        }
+
+        return res.status(200).json({ message: 'OTP verified' });
+    } catch (error) {
+        return res.status(500).json({ message: 'OTP verification failed', error: error.message });
+    }
+};
+
+// 🔁 Reset Password
+exports.resetPassword = async (req, res) => {
+    const { email, otp, newPassword } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user || user.resetOTP !== otp || user.otpExpiry < Date.now()) {
+            return res.status(400).json({ message: 'Invalid or expired OTP' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        user.resetOTP = null;
+        user.otpExpiry = null;
+        await user.save();
+
+        return res.status(200).json({ message: 'Password reset successful' });
+    } catch (error) {
+        return res.status(500).json({ message: 'Password reset failed', error: error.message });
+    }
+};
