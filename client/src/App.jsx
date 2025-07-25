@@ -21,6 +21,9 @@ import { AdminUserActionsProvider } from "./context/AdminUserActionsContext";
 import Charts from "./pages/Charts";
 import ScrollToTop from "./components/ScrollToTop";
 import NotFound from "./pages/NotFound";
+import ForgotPasswordPage from "./pages/ForgotPasswordFlow";
+
+
 
 function App() {
   return (
@@ -63,6 +66,7 @@ function App() {
             </PrivateRoute>
           }
         />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         {/* <Route
           path="/upload/chart/:filename"
           element={
