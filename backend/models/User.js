@@ -20,10 +20,21 @@ const UserSchema = new mongoose.Schema({
         enum: ['user', 'admin'],
         default: 'user',
     },
-    blocked:{
-        type:Boolean,
-        default:false
-    }
+    blocked: {
+        type: Boolean,
+        default: false,
+    },
+
+    // ✅ Add these for OTP-based password reset
+    resetOTP: {
+        type: String,
+        default: null,
+    },
+    otpExpiry: {
+        type: Date,
+        default: null,
+    },
+
 }, { timestamps: true });
 
 module.exports = mongoose.models.User || mongoose.model('User', UserSchema);
