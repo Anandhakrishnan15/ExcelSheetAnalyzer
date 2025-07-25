@@ -15,7 +15,7 @@ export default function ProfileSidebarLeft({ showLeft, setShowLeft, leftRef }) {
         lg:relative lg:translate-x-0 lg:w-1/4 scrollbar-none`}
     >
       {/* Mobile Header */}
-      <div className="p-4 border-b flex justify-between items-center bg-gray-100 lg:hidden">
+      <div className="p-4 border-b flex justify-between items-center lg:hidden">
         <h2 className="text-lg font-semibold">MyComponent</h2>
         <button
           className="text-sm px-2 py-1 bg-red-500 text-white rounded"

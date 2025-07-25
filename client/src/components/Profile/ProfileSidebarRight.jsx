@@ -23,17 +23,36 @@ export default function ProfileSidebarRight({ userInfo, showRight, setShowRight,
       <div className="flex-1 p-3 overflow-y-auto space-y-4">
         {userInfo ? (
           <div className="bg-[var(--card)] p-3 rounded border border-[var(--border)]">
-            <h2 className="text-sm font-semibold uppercase text-gray-500 mb-2">Profile</h2>
-            <p className="text-sm mb-1"><strong>Name:</strong> {userInfo.name}</p>
-            <p className="text-sm mb-1"><strong>Email:</strong> {userInfo.email}</p>
-            <p className="text-sm mb-1"><strong>Role:</strong> {userInfo.role}</p>
+            <h2 className="text-sm font-semibold uppercase text-gray-500 mb-2">
+              Profile
+            </h2>
+            <p className="text-sm mb-1">
+              <strong>Name:</strong>
+              <span className="inline-block max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap align-middle">
+                {userInfo.name}
+              </span>
+            </p>
+            <p className="text-sm mb-1">
+              <strong>Email:</strong>
+              <span className="inline-block max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap align-middle">
+                {userInfo.email}
+              </span>
+            </p>
+            <p className="text-sm mb-1">
+              <strong>Role:</strong>
+              <span className="inline-block max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap align-middle">
+                {userInfo.role}
+              </span>
+            </p>
           </div>
         ) : (
           <p className="text-sm text-gray-600">No user info available.</p>
         )}
 
         <div className="bg-[var(--card)] p-3 rounded border border-[var(--border)]">
-          <h3 className="text-sm font-semibold uppercase text-gray-500 mb-2">Quick Links</h3>
+          <h3 className="text-sm font-semibold uppercase text-gray-500 mb-2">
+            Quick Links
+          </h3>
           <ul className="space-y-2">
             <li>
               <button
@@ -65,17 +84,27 @@ export default function ProfileSidebarRight({ userInfo, showRight, setShowRight,
         </div>
 
         <div className="bg-[var(--card)] p-3 rounded border border-[var(--border)]">
-          <h3 className="text-sm font-semibold uppercase text-gray-500 mb-2">Account</h3>
+          <h3 className="text-sm font-semibold uppercase text-gray-500 mb-2">
+            Account
+          </h3>
           <div className="flex flex-col space-y-2">
-            <button className="w-full px-3 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">Edit Profile</button>
-            <button className="w-full px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm">Change Password</button>
-            <button className="w-full px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm">Delete Account</button>
+            <button className="w-full px-3 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm">
+              Edit Profile
+            </button>
+            <button className="w-full px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm">
+              Change Password
+            </button>
+            <button className="w-full px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm">
+              Delete Account
+            </button>
           </div>
         </div>
 
         {userInfo?.role === "admin" && (
           <div className="bg-[var(--card)] p-3 rounded border border-[var(--border)]">
-            <h3 className="text-sm font-semibold uppercase text-gray-500 mb-2">Admin Tools</h3>
+            <h3 className="text-sm font-semibold uppercase text-gray-500 mb-2">
+              Admin Tools
+            </h3>
             <button
               onClick={() => navigate("/admin/users")}
               className="w-full px-3 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 text-sm"
