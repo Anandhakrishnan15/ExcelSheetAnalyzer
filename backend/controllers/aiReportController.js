@@ -167,19 +167,23 @@ Write the report in 2 paragraphs describing:
 
 exports.getAllReports = async (req, res) => {
     try {
-        const userId = req.user._id;
-        const reportDoc = await AIReport.findOne({ user: userId });
+        const userId = req.user?._id;
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        let reportDoc = await AIReport.findOne({ user: userId });
 
         if (!reportDoc) {
-            return res.status(404).json({ message: "No reports found for this user." });
+            reportDoc = new AIReport({ user: userId, reports: [] });
+            await reportDoc.save();
         }
 
         res.status(200).json({
-            reports: reportDoc.reports ||[]
+            reports: reportDoc.reports || [],
         });
     } catch (error) {
-        console.error("Error fetching reports:", error);
-        res.status(500).json({ message: "Server error." });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 exports.saveAIReportToChart = async (req, res) => {
@@ -211,7 +215,7 @@ exports.saveAIReportToChart = async (req, res) => {
 
         res.status(200).json({ message: "AI report saved in chart successfully." });
     } catch (error) {
-        console.error("Error saving AI report to chart:", error);
+        // console.error("Error saving AI report to chart:", error);
         res.status(500).json({ message: "Server error." });
     }
 };
@@ -254,7 +258,7 @@ exports.incrementdownloadCount = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error(" Error incrementing download count:", error);
+        // console.error(" Error incrementing download count:", error);
         res.status(500).json({ message: "Server error." });
     }
 };
