@@ -13,7 +13,7 @@ exports.getMe = async (req, res) => {
         }
         res.status(200).json(user); // optionally sanitize here
     } catch (error) {
-        console.error("Error fetching user:", error);
+        // console.error("Error fetching user:", error);
         res.status(500).json({ message: "Server error" });
     }
 };
@@ -31,7 +31,7 @@ exports.blockUser = async (req, res) => {
 
         res.status(200).json({ message: `User ${user.blocked ? "blocked" : "unblocked"}` });
     } catch (error) {
-        console.error("Error blocking user:", error);
+        // console.error("Error blocking user:", error);
         res.status(500).json({ message: "Server error" });
     }
 };
@@ -50,7 +50,7 @@ exports.changeUserRole = async (req, res) => {
 
         res.status(200).json({ message: `User role updated to ${role}` });
     } catch (error) {
-        console.error("Error updating role:", error);
+        // console.error("Error updating role:", error);
         res.status(500).json({ message: "Server error" });
     }
 };
@@ -66,7 +66,7 @@ exports.deleteUser = async (req, res) => {
         // Optionally delete associated data (e.g. reports)
         res.status(200).json({ message: "User deleted successfully" });
     } catch (error) {
-        console.error("Error deleting user:", error);
+        // console.error("Error deleting user:", error);
         res.status(500).json({ message: "Server error" });
     }
 };
@@ -84,7 +84,7 @@ exports.revokeUserAccess = async (req, res) => {
 
         res.status(200).json({ message: "User access revoked (token invalidated)" });
     } catch (error) {
-        console.error("Error revoking access:", error);
+        // console.error("Error revoking access:", error);
         res.status(500).json({ message: "Server error" });
     }
 };

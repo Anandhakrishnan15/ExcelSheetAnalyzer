@@ -66,7 +66,7 @@ exports.uploadFile = async (req, res) => {
       data: newUpload,
     });
   } catch (err) {
-    console.error("Upload error:", err.message, err.stack);
+    // console.error("Upload error:", err.message, err.stack);
     res.status(500).json({ message: "Server error." });
   }
 };
@@ -102,7 +102,7 @@ exports.getUploadFiles = async (req, res) => {
       uploadedFiles: results,
     });
   } catch (err) {
-    console.error("❌ Fetch files error:", err);
+    // console.error("❌ Fetch files error:", err);
     res.status(500).json({ message: "Server error." });
   }
 };

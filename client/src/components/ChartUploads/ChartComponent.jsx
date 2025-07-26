@@ -63,13 +63,13 @@ const ChartComponent = () => {
       };
 
       const res = await saveCharts(payload);
-      console.log(" Chart saved:", res.data);
+      // console.log(" Chart saved:", res.data);
 
       setSavedIndexes((prev) => [...prev,chart.id]);
       toast.success("Chart saved successfully!");
       savedChartsRef.current?.refreshCharts();
     } catch (error) {
-      console.error("Save failed:", error.response?.data || error.message);
+      // console.error("Save failed:", error.response?.data || error.message);
       toast.error("Failed to save chart.");
     }
   };

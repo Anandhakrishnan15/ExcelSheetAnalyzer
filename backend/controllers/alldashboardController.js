@@ -121,7 +121,7 @@ exports.getDashboardData = async (req, res) => {
             },
         });
     } catch (err) {
-        console.error("Dashboard aggregation failed:", err);
+        // console.error("Dashboard aggregation failed:", err);
         res.status(500).json({
             success: false,
             message: "Server error while fetching dashboard data.",
@@ -163,7 +163,7 @@ exports.getGlobalDashboardStats = async (req, res) => {
             },
         });
     } catch (err) {
-        console.error("Global stats error:", err);
+        // console.error("Global stats error:", err);
         res.status(500).json({
             success: false,
             message: "Failed to fetch global dashboard stats.",
@@ -255,7 +255,7 @@ exports.getAllUserStats = async (req, res) => {
             },
         });
     } catch (err) {
-        console.error("User stats error:", err);
+        // console.error("User stats error:", err);
         res.status(500).json({
             success: false,
             message: "Failed to fetch user stats.",

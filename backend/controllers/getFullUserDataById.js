@@ -65,7 +65,7 @@ const getFullUserDataById = async (req, res) => {
 
         res.status(200).json(response);
     } catch (err) {
-        console.error("Error in getFullUserDataById:", err);
+        // console.error("Error in getFullUserDataById:", err);
         res.status(500).json({ message: "Server error" });
     }
 };

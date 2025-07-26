@@ -94,7 +94,7 @@ const getAllAdminDashboardStats = async (req, res) => {
 
         return res.status(200).json({ admins: enrichedAdmins });
     } catch (error) {
-        console.error("getAllAdminDashboardStats error:", error);
+        // console.error("getAllAdminDashboardStats error:", error);
         return res.status(500).json({ message: "Server error" });
     }
 };

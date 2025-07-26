@@ -107,7 +107,7 @@ const searchUsers = async (req, res) => {
 
         return res.status(200).json({ users: enrichedUsers });
     } catch (error) {
-        console.error("searchUsers error:", error);
+        // console.error("searchUsers error:", error);
         return res.status(500).json({ message: "Server error" });
     }
 };

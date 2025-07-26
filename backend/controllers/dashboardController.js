@@ -10,7 +10,7 @@ exports.getDashboardCounts = async (req, res) => {
             data: counts
         });
     } catch (err) {
-        console.error("Error fetching dashboard counts:", err);
+        // console.error("Error fetching dashboard counts:", err);
         res.status(500).json({
             success: false,
             error: "Could not load dashboard counts"
