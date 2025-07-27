@@ -22,16 +22,7 @@ export const ExcelUploadProvider = ({ children }) => {
       const response = await getExceldata();
       const data = response?.data?.uploadedFiles || response?.data;
 
-      setExcelData(data);
-
-      // data.forEach((file) => {
-      //   if (file.source === "multer" && file.fileExists) {
-      //     console.log(`File "${file.fileName}" available on disk.`);
-      //   } else {
-      //     console.log(`File "${file.fileName}" only available in database.`);
-      //   }
-      // });
-    
+      setExcelData(data);  
     } catch (err) {
       // console.error("❌ Error fetching Excel data:", err);
       setError(err);
@@ -40,12 +31,15 @@ export const ExcelUploadProvider = ({ children }) => {
     }
   };
 
-  // when the token get chnages it will get the data fo that perticulaer user
+  
 useEffect(() => {
-  if (token && excelData.length === 0) {
+  if (token) {
     getExcelData();
+  } else {
+    setExcelData([]); 
   }
 }, [token]);
+
 
 
   return (
